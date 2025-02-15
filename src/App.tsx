@@ -1,7 +1,63 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { Menu } from '@tauri-apps/api/menu';
+import { TrayIcon, TrayIconEvent } from '@tauri-apps/api/tray';
+import appIcon from './assets/app-icon.svg'
+
+const menu = await Menu.new({
+  items: [
+    {
+      id: 'settings',
+      text: 'Settings',
+      action: async () => {
+        console.log('settings pressed');
+        await invoke('open_main_window', [])
+      },
+    },
+    {
+      id: 'quit',
+      text: 'Quit',
+      action: async () => {
+        console.log('quit pressed')
+        await invoke('close_app', [])
+      },
+    },
+  ],
+});
+
+
+const options = {
+  menu,
+  action: (event: TrayIconEvent) => {
+    switch (event.type) {
+      case 'Click':
+        console.log(
+          `mouse ${event.button} button pressed, state: ${event.buttonState}`
+        );
+        break;
+      case 'DoubleClick':
+        console.log(`mouse ${event.button} button pressed`);
+        break;
+      case 'Enter':
+        console.log(
+          `mouse hovered tray at ${event.rect.position.x}, ${event.rect.position.y}`
+        );
+        break;
+      case 'Move':
+        console.log(
+          `mouse moved on tray at ${event.rect.position.x}, ${event.rect.position.y}`
+        );
+        break;
+      case 'Leave':
+        console.log(
+          `mouse left tray at ${event.rect.position.x}, ${event.rect.position.y}`
+        );
+        break;
+    }
+  },
+};
+
+const tray = await TrayIcon.new(options);
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -13,37 +69,8 @@ function App() {
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+    <main className="w-full h-full flex justify-center p-2 bg-gray-100">
+      <h1 className="text-4xl font-bold">Secure Connect</h1>
     </main>
   );
 }
