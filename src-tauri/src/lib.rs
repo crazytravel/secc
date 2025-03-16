@@ -1,88 +1,44 @@
-use tauri::{
-    image::Image,
-    menu::{CheckMenuItem, MenuBuilder, MenuItem, SubmenuBuilder},
-    tray::TrayIconBuilder,
-    AppHandle, Manager,
-};
+use std::sync::Mutex;
 
-fn open_main_window(app: &AppHandle) {
-    #[cfg(target_os = "macos")]
-    {
-        tauri::AppHandle::show(app).unwrap();
-    }
+use command::SidecarState;
+use tauri::{AppHandle, Manager};
+mod command;
+mod menu;
+
+fn auto_start(app: AppHandle) {
+    let cloned_app = app.clone();
+    // Start the sidecar when the app starts
+    tauri::async_runtime::spawn(async move {
+        command::call_sidecar(app).await;
+    });
+
+    // Auto set proxy address
+    command::switch_to_socks(cloned_app);
 }
 
-#[tauri::command]
-fn close_app(app: AppHandle) {
-    app.exit(0);
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![close_app])
+        .manage(Mutex::new(SidecarState::default()))
+        .invoke_handler(tauri::generate_handler![
+            command::close_app,
+            command::call_sidecar
+        ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             {
                 app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             }
-            let icon_bytes = include_bytes!("../icons/tray-icon.png");
-            let setting = MenuItem::with_id(app, "setting", "Setting", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-
-            let auto_model =
-                CheckMenuItem::with_id(app, "auto_model", "Auto Model", true, false, None::<&str>)?;
-            let proxy_model = CheckMenuItem::with_id(
-                app,
-                "proxy_model",
-                "Proxy Model",
-                true,
-                false,
-                None::<&str>,
-            )?;
-            let direct_model = CheckMenuItem::with_id(
-                app,
-                "direct_model",
-                "Direct Model",
-                true,
-                false,
-                None::<&str>,
-            )?;
-            let node = MenuItem::with_id(app, "node", "Node", true, None::<&str>)?;
-            let server = SubmenuBuilder::new(app, "Servers").item(&node).build()?;
-
-            let menu = MenuBuilder::new(app)
-                .item(&auto_model)
-                .item(&proxy_model)
-                .item(&direct_model)
-                .separator()
-                .item(&server)
-                .separator()
-                .item(&setting)
-                .separator()
-                .item(&quit)
-                .build()?;
-            let _tray = TrayIconBuilder::new()
-                .tooltip("Secure Connect")
-                .icon_as_template(true)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "setting" => {
-                        println!("setting menu item was clicked");
-                        open_main_window(app);
-                    }
-                    "quit" => {
-                        println!("quit menu item was clicked");
-                        app.exit(0);
-                    }
-                    _ => {
-                        println!("menu item {:?} not handled", event.id);
-                    }
-                })
-                .menu(&menu)
-                .icon(Image::from_bytes(icon_bytes)?)
-                .build(app)?;
-
+            // add tray menu
+            menu::build_menu(app.handle())?;
+            // auto start process
+            auto_start(app.handle().clone());
+            // 
+            
             Ok(())
         })
         .on_window_event(|win, event| {
@@ -91,7 +47,6 @@ pub fn run() {
                 {
                     event.window().hide().unwrap();
                 }
-
                 #[cfg(target_os = "macos")]
                 {
                     tauri::AppHandle::hide(win.app_handle()).unwrap();
@@ -99,6 +54,17 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit { .. } = event {
+                // clean up things
+                println!("---clean up start---");
+                let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
+                let mut sidecar_state = sidecar_state.lock().unwrap();
+                command::switch_to_direct(app_handle);
+                sidecar_state.get().unwrap().kill().expect("kill sidecar process failed");
+                println!("---clean up end---");
+            }
+        });
 }
