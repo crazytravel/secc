@@ -13,11 +13,8 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "secc-socks",
-          "sidecar": true,
-          "args": [
-            "no-auth"
-          ]
+          "name": "secc-agent",
+          "sidecar": true
         }
       ]
     },

@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager};
-use tauri_plugin_shell::{process::CommandChild, ShellExt};
+use tauri_plugin_shell::{ShellExt, process::CommandChild};
 
 #[derive(Debug)]
 pub struct SidecarState(Option<CommandChild>);
@@ -20,7 +20,7 @@ impl SidecarState {
 
 #[tauri::command]
 pub async fn call_sidecar(app: AppHandle) {
-    let sidecar_command = app.shell().sidecar("secc-socks").unwrap().args(["no-auth"]);
+    let sidecar_command = app.shell().sidecar("secc-agent").unwrap();
     let (_rx, child) = sidecar_command.spawn().unwrap();
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let mut sidecar_state = sidecar_state.lock().unwrap();
@@ -94,6 +94,86 @@ pub fn switch_to_socks(app: AppHandle) {
         .shell()
         .command("networksetup")
         .args(["-setsocksfirewallproxy", "Ethernet", "127.0.0.1", "1080"])
+        .spawn()
+        .unwrap();
+}
+
+#[tauri::command]
+#[cfg(target_os = "macos")]
+pub fn switch_to_http(app: AppHandle) {
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setautoproxystate", "Wi-Fi", "off"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsecurewebproxystate", "Wi-Fi", "on"])
+        .spawn()
+        .unwrap();
+
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsecurewebproxy", "Wi-Fi", "127.0.0.1", "1081"])
+        .spawn()
+        .unwrap();
+
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setwebproxystate", "Wi-Fi", "on"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setwebproxy", "Wi-Fi", "127.0.0.1", "1081"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsocksfirewallproxystate", "Wi-Fi", "off"])
+        .spawn()
+        .unwrap();
+
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setautoproxystate", "Ethernet", "off"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsecurewebproxystate", "Ethernet", "on"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsecurewebproxy", "Ethernet", "127.0.0.1", "1081"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setwebproxystate", "Ethernet", "on"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setwebproxy", "Ethernet", "127.0.0.1", "1081"])
+        .spawn()
+        .unwrap();
+    let (_rx, _child) = app
+        .shell()
+        .command("networksetup")
+        .args(["-setsocksfirewallproxystate", "Ethernet", "off"])
         .spawn()
         .unwrap();
 }
