@@ -27,8 +27,9 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
         false,
         None::<&str>,
     )?;
-    let socks_model = CheckMenuItem::with_id(app, "socks", "Socks", false, true, None::<&str>)?;
-    let http_model = CheckMenuItem::with_id(app, "http", "Http", true, false, None::<&str>)?;
+    let socks_model =
+        CheckMenuItem::with_id(app, "socks_model", "Socks", false, true, None::<&str>)?;
+    let http_model = CheckMenuItem::with_id(app, "http_model", "Http", true, false, None::<&str>)?;
     // let node = MenuItem::with_id(app, "node", "Node", true, None::<&str>)?;
     // let server = SubmenuBuilder::new(app, "Servers").item(&node).build()?;
     let menu = MenuBuilder::new(app)
@@ -54,30 +55,35 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 toggle_model(&auto_model, &proxy_model, &direct_model, "auto_model");
                 let app_side_handle = app.clone();
                 let app_handle = app.clone();
-                let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                let mut sidecar_state = sidecar_state.lock().unwrap();
-                sidecar_state
-                    .get()
-                    .unwrap()
-                    .kill()
-                    .expect("kill sidecar process failed");
+                {
+                    let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
+                    let mut sidecar_state = sidecar_state.lock().unwrap();
+                    if let Some(child) = sidecar_state.get() {
+                        if let Err(e) = child.kill() {
+                            eprintln!("Kill sidecar process occur error: {:?}", e);
+                        }
+                    }
+                }
+
                 tauri::async_runtime::spawn(async move {
                     command::call_sidecar(app_side_handle, command::AccessMode::Auto).await;
                 });
             }
             "proxy_model" => {
                 println!("socks model menu item was clicked");
-                toggle_model(&auto_model, &proxy_model, &direct_model, "auto_model");
+                toggle_model(&auto_model, &proxy_model, &direct_model, "proxy_model");
 
                 let app_side_handle = app.clone();
                 let app_handle = app.clone();
-                let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                let mut sidecar_state = sidecar_state.lock().unwrap();
-                sidecar_state
-                    .get()
-                    .unwrap()
-                    .kill()
-                    .expect("kill sidecar process failed");
+                {
+                    let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
+                    let mut sidecar_state = sidecar_state.lock().unwrap();
+                    if let Some(child) = sidecar_state.get() {
+                        if let Err(e) = child.kill() {
+                            eprintln!("Kill sidecar process occur error: {:?}", e);
+                        }
+                    }
+                }
                 tauri::async_runtime::spawn(async move {
                     command::call_sidecar(app_side_handle, command::AccessMode::Proxy).await;
                 });
@@ -88,13 +94,15 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 command::switch_to_direct(app);
 
                 let app_handle = app.clone();
-                let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                let mut sidecar_state = sidecar_state.lock().unwrap();
-                sidecar_state
-                    .get()
-                    .unwrap()
-                    .kill()
-                    .expect("kill sidecar process failed");
+                {
+                    let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
+                    let mut sidecar_state = sidecar_state.lock().unwrap();
+                    if let Some(child) = sidecar_state.get() {
+                        if let Err(e) = child.kill() {
+                            eprintln!("Kill sidecar process occur error: {:?}", e);
+                        }
+                    }
+                }
             }
             "socks_model" => {
                 println!("socks proxy model menu item was clicked");
@@ -103,7 +111,7 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
             }
             "http_model" => {
                 println!("http proxy model menu item was clicked");
-                toggle_model(&auto_model, &socks_model, &http_model, "http_model");
+                toggle_protocol(&socks_model, &http_model, "http_model");
                 command::switch_to_http(app.clone());
             }
             "setting" => {
