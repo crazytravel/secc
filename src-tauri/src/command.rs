@@ -1,5 +1,6 @@
-use std::sync::Mutex;
+use std::{fmt, sync::Mutex};
 
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_shell::{ShellExt, process::CommandChild};
 
@@ -18,9 +19,37 @@ impl SidecarState {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum AccessMode {
+    Auto,
+    Proxy,
+    Direct,
+}
+
+impl fmt::Display for AccessMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AccessMode::Auto => write!(f, "AUTO"),
+            AccessMode::Proxy => write!(f, "PROXY"),
+            AccessMode::Direct => write!(f, "DIRECT"),
+        }
+    }
+}
+
 #[tauri::command]
-pub async fn call_sidecar(app: AppHandle) {
-    let sidecar_command = app.shell().sidecar("secc-agent").unwrap();
+pub async fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
+    let sidecar_command = app.shell().sidecar("secc-agent").unwrap().args([
+        "-p",
+        "/Users/shuo/secc_config/proxy-list.txt",
+        "-d",
+        "/Users/shuo/secc_config/direct-list.txt",
+        "-c",
+        "/Users/shuo/secc_config/cert.pem",
+        "-r",
+        "185.212.58.6:443",
+        "-a",
+        &access_mode.to_string(),
+    ]);
     let (_rx, child) = sidecar_command.spawn().unwrap();
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let mut sidecar_state = sidecar_state.lock().unwrap();

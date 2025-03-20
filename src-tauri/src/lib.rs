@@ -9,17 +9,17 @@ fn auto_start(app: AppHandle) {
     let cloned_app = app.clone();
     // Start the sidecar when the app starts
     tauri::async_runtime::spawn(async move {
-        command::call_sidecar(app).await;
+        command::call_sidecar(app, command::AccessMode::Auto).await;
     });
 
     // Auto set proxy address
     command::switch_to_socks(cloned_app);
 }
 
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
@@ -37,8 +37,8 @@ pub fn run() {
             menu::build_menu(app.handle())?;
             // auto start process
             auto_start(app.handle().clone());
-            // 
-            
+            //
+
             Ok(())
         })
         .on_window_event(|win, event| {
@@ -63,7 +63,11 @@ pub fn run() {
                 let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
                 let mut sidecar_state = sidecar_state.lock().unwrap();
                 command::switch_to_direct(app_handle);
-                sidecar_state.get().unwrap().kill().expect("kill sidecar process failed");
+                sidecar_state
+                    .get()
+                    .unwrap()
+                    .kill()
+                    .expect("kill sidecar process failed");
                 println!("---clean up end---");
             }
         });
