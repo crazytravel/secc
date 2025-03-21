@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_shell::{ShellExt, process::CommandChild};
 
+use crate::menu::{self};
+
 #[derive(Debug)]
 pub struct SidecarState(Option<CommandChild>);
 
@@ -37,7 +39,7 @@ impl fmt::Display for AccessMode {
 }
 
 #[tauri::command]
-pub async fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
+pub fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
     let sidecar_command = app.shell().sidecar("secc-agent").unwrap().args([
         "-p",
         "/Users/shuo/secc_config/proxy-list.txt",
@@ -53,6 +55,9 @@ pub async fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
     let (_rx, child) = sidecar_command.spawn().unwrap();
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let mut sidecar_state = sidecar_state.lock().unwrap();
+    if child.pid() != 0 {
+        menu::change_tray_icon(&app, true).unwrap();
+    }
     sidecar_state.set(child);
 }
 

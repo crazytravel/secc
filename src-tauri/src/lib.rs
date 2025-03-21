@@ -1,21 +1,10 @@
 use std::sync::Mutex;
 
+use anyhow::Error;
 use command::SidecarState;
-use tauri::{AppHandle, Manager};
+use tauri::{App, AppHandle, Manager};
 mod command;
 mod menu;
-
-fn auto_start(app: AppHandle) {
-    let cloned_app = app.clone();
-    // Start the sidecar when the app starts
-    tauri::async_runtime::spawn(async move {
-        command::call_sidecar(app, command::AccessMode::Auto).await;
-    });
-    // Auto set proxy address
-    tauri::async_runtime::spawn(async move {
-        command::switch_to_socks(cloned_app);
-    });
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -30,15 +19,7 @@ pub fn run() {
             command::call_sidecar
         ])
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            {
-                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-            }
-            // add tray menu
-            menu::build_menu(app.handle())?;
-            // auto start process
-            auto_start(app.handle().clone());
-
+            init_setup(app)?;
             Ok(())
         })
         .on_window_event(|win, event| {
@@ -71,4 +52,27 @@ pub fn run() {
                 println!("---clean up end---");
             }
         });
+}
+
+fn init_setup(app: &mut App) -> Result<(), Error> {
+    #[cfg(target_os = "macos")]
+    {
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+    // add tray menu
+    menu::build_menu(app.handle())?;
+    auto_start(app.handle().clone());
+    Ok(())
+}
+
+fn auto_start(app: AppHandle) {
+    let cloned_app = app.clone();
+    // Start the sidecar when the app starts
+    tauri::async_runtime::spawn(async move {
+        command::call_sidecar(app, command::AccessMode::Auto);
+    });
+    // Auto set proxy address
+    tauri::async_runtime::spawn(async move {
+        command::switch_to_socks(cloned_app);
+    });
 }

@@ -11,14 +11,34 @@ use tauri::{
     tray::TrayIconBuilder,
 };
 
+pub const APP_TRAY_ID: &str = "secc-tray";
+
+pub fn change_tray_icon(app: &AppHandle, active: bool) -> Result<(), Error> {
+    let icon_bytes: Vec<u8> = if active {
+        include_bytes!("../icons/tray-icon-active.png").to_vec()
+    } else {
+        include_bytes!("../icons/tray-icon.png").to_vec()
+    };
+    if let Some(tray) = app.tray_by_id(APP_TRAY_ID) {
+        tray.set_icon(Some(Image::from_bytes(&icon_bytes)?))?;
+    }
+    Ok(())
+}
+
 pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
     let icon_bytes = include_bytes!("../icons/tray-icon.png");
     let setting = MenuItem::with_id(app, "setting", "Setting", true, None::<&str>)?;
     let quit = PredefinedMenuItem::quit(app, Some("Quit"))?;
     let auto_model =
         CheckMenuItem::with_id(app, "auto_model", "Auto Model", false, true, None::<&str>)?;
-    let proxy_model =
-        CheckMenuItem::with_id(app, "proxy_model", "Proxy Model", true, false, None::<&str>)?;
+    let proxy_model = CheckMenuItem::with_id(
+        app,
+        "proxy_model",
+        "Global Model",
+        true,
+        false,
+        None::<&str>,
+    )?;
     let direct_model = CheckMenuItem::with_id(
         app,
         "direct_model",
@@ -46,7 +66,7 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
         // .separator()
         .item(&quit)
         .build()?;
-    TrayIconBuilder::new()
+    TrayIconBuilder::with_id(APP_TRAY_ID)
         .tooltip("Secure Connect")
         .icon_as_template(true)
         .on_menu_event(move |app, event| match event.id.as_ref() {
@@ -66,7 +86,7 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 }
 
                 tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(app_side_handle, command::AccessMode::Auto).await;
+                    command::call_sidecar(app_side_handle, command::AccessMode::Auto);
                 });
             }
             "proxy_model" => {
@@ -85,7 +105,7 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                     }
                 }
                 tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(app_side_handle, command::AccessMode::Proxy).await;
+                    command::call_sidecar(app_side_handle, command::AccessMode::Proxy);
                 });
             }
             "direct_model" => {
@@ -100,6 +120,8 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                     if let Some(child) = sidecar_state.get() {
                         if let Err(e) = child.kill() {
                             eprintln!("Kill sidecar process occur error: {:?}", e);
+                        } else {
+                            change_tray_icon(app, false).unwrap();
                         }
                     }
                 }
