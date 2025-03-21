@@ -11,9 +11,10 @@ fn auto_start(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         command::call_sidecar(app, command::AccessMode::Auto).await;
     });
-
     // Auto set proxy address
-    command::switch_to_socks(cloned_app);
+    tauri::async_runtime::spawn(async move {
+        command::switch_to_socks(cloned_app);
+    });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,7 +38,6 @@ pub fn run() {
             menu::build_menu(app.handle())?;
             // auto start process
             auto_start(app.handle().clone());
-            //
 
             Ok(())
         })
