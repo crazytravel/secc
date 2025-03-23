@@ -1,11 +1,6 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function SectionCards() {
   return (
@@ -16,10 +11,8 @@ export function SectionCards() {
             <ArrowUp />
             <div>Up</div>
           </CardTitle>
-          <CardDescription className="text-2xl text-white">
-            1,234 kb/s
-          </CardDescription>
         </CardHeader>
+        <CardContent className="text-2xl">1,234 kb/s</CardContent>
       </Card>
       <Card className="flex-1">
         <CardHeader>
@@ -27,10 +20,8 @@ export function SectionCards() {
             <ArrowDown />
             <div>Down</div>
           </CardTitle>
-          <CardDescription className="text-2xl text-white">
-            1,250.00 kb/s
-          </CardDescription>
         </CardHeader>
+        <CardContent className="text-2xl">1,250.00 kb/s</CardContent>
       </Card>
     </div>
   );

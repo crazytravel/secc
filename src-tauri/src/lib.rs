@@ -6,10 +6,13 @@ use sysinfo::{Pid, System};
 use tauri::{App, AppHandle, Manager, Theme};
 mod command;
 mod menu;
+mod server;
+mod store;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -18,9 +21,32 @@ pub fn run() {
         .manage(Mutex::new(ThemeState::default()))
         .invoke_handler(tauri::generate_handler![
             command::close_app,
-            command::call_sidecar
+            command::set_server_config,
+            command::get_server_config,
+            command::set_listen_config,
+            command::get_listen_config,
+            command::set_direct_rules,
+            command::get_direct_rules,
+            command::set_proxy_rules,
+            command::get_proxy_rules,
+            command::set_cert,
+            command::get_cert,
+            command::set_cert_key,
+            command::get_cert_key,
+            command::switch_bind_mode,
+            command::open_secc,
+            command::close_secc,
+            command::switch_access_mode,
+            command::get_access_mode,
+            command::get_bind_mode
         ])
         .setup(|app| {
+            let app_handle = app.app_handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = store::init_all(&app_handle).await {
+                    eprintln!("initial config files error: {:?}", e);
+                }
+            });
             init_setup(app)?;
             Ok(())
         })
@@ -71,7 +97,7 @@ pub fn run() {
                 println!("---clean up start---");
                 let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
                 let mut sidecar_state = sidecar_state.lock().unwrap();
-                command::switch_to_direct(app_handle);
+                command::switch_to_direct(app_handle.clone());
                 let pid = sidecar_state.get();
                 let sys = System::new_all();
                 let pid = Pid::from_u32(pid);
@@ -101,7 +127,7 @@ fn auto_start(app: AppHandle) {
     let cloned_app = app.clone();
     // Start the sidecar when the app starts
     tauri::async_runtime::spawn(async move {
-        command::call_sidecar(app, command::AccessMode::Auto);
+        command::call_sidecar(&app, command::AccessMode::Auto);
     });
     // Auto set proxy address
     tauri::async_runtime::spawn(async move {

@@ -99,7 +99,6 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
             "auto_model" => {
                 println!("auto model menu item was clicked");
                 toggle_model(&auto_model, &proxy_model, &direct_model, "auto_model");
-                let app_side_handle = app.clone();
                 let app_handle = app.clone();
                 {
                     let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
@@ -113,9 +112,9 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                         }
                     }
                 }
-
+                let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(app_side_handle, command::AccessMode::Auto);
+                    command::call_sidecar(&app_handle, command::AccessMode::Auto);
                 });
             }
             "proxy_model" => {
@@ -137,13 +136,13 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                     }
                 }
                 tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(app_side_handle, command::AccessMode::Proxy);
+                    command::call_sidecar(&app_side_handle, command::AccessMode::Proxy);
                 });
             }
             "direct_model" => {
                 println!("direct model menu item was clicked");
                 toggle_model(&auto_model, &proxy_model, &direct_model, "direct_model");
-                command::switch_to_direct(app);
+                command::switch_to_direct(app.clone());
 
                 let app_handle = app.clone();
                 {

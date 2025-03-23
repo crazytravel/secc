@@ -2,28 +2,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { invoke } from '@tauri-apps/api/core';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 const FormSchema = z.object({
-  proxyRule: z
-    .string()
-    .min(10, {
-      message: 'Bio must be at least 10 characters.',
-    })
-    .max(160, {
-      message: 'Bio must not be longer than 30 characters.',
-    }),
+  proxyRules: z.string(),
 });
 
 function ProxyRule() {
@@ -31,7 +24,7 @@ function ProxyRule() {
     resolver: zodResolver(FormSchema),
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     toast('You submitted the following values:', {
       description: (
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
@@ -39,14 +32,33 @@ function ProxyRule() {
         </pre>
       ),
     });
+    await saveDirectRules(data);
   }
+
+  const loadProxyRules = async () => {
+    let proxyRules = await invoke<string>('get_proxy_rules');
+    if (proxyRules) {
+      form.setValue('proxyRules', proxyRules);
+    }
+  };
+
+  const saveDirectRules = async (data: z.infer<typeof FormSchema>) => {
+    await invoke('set_proxy_rules', {
+      directRules: data.proxyRules,
+    });
+  };
+
+  useEffect(() => {
+    loadProxyRules();
+  }, []);
+
   return (
     <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="proxyRule"
+            name="proxyRules"
             render={({ field }) => (
               <FormItem>
                 <FormControl>

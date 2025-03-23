@@ -19,6 +19,11 @@
       ]
     },
     "dialog:default",
-    "store:default"
+    "store:default",
+    "http:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://cdn.jsdelivr.net" }]
+    }
   ]
 }

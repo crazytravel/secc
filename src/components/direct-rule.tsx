@@ -2,28 +2,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 const FormSchema = z.object({
-  directRule: z
-    .string()
-    .min(10, {
-      message: 'Bio must be at least 10 characters.',
-    })
-    .max(160, {
-      message: 'Bio must not be longer than 30 characters.',
-    }),
+  directRules: z.string(),
 });
 
 function DirectRule() {
@@ -31,7 +24,7 @@ function DirectRule() {
     resolver: zodResolver(FormSchema),
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     toast('You submitted the following values:', {
       description: (
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
@@ -39,14 +32,33 @@ function DirectRule() {
         </pre>
       ),
     });
+    await saveDirectRules(data);
   }
+
+  const loadDirectRules = async () => {
+    let directRules = await invoke<string>('get_direct_rules');
+    if (directRules) {
+      form.setValue('directRules', directRules);
+    }
+  };
+
+  const saveDirectRules = async (data: z.infer<typeof FormSchema>) => {
+    await invoke('set_direct_rules', {
+      directRules: data.directRules,
+    });
+  };
+
+  useEffect(() => {
+    loadDirectRules();
+  }, []);
+
   return (
     <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="certKey"
+            name="directRules"
             render={({ field }) => (
               <FormItem>
                 <FormControl>

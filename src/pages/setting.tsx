@@ -13,7 +13,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,6 +20,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 const FormSchema = z.object({
   socksIp: z.string().min(2, {
@@ -48,7 +49,7 @@ function Setting() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     toast('You submitted the following values:', {
       description: (
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
@@ -56,7 +57,39 @@ function Setting() {
         </pre>
       ),
     });
+    await saveListenConfig(data);
   }
+
+  const loadListenConfig = async () => {
+    let listenConfig = await invoke<ListenConfigOption>('get_listen_config');
+    if (listenConfig) {
+      form.setValue('socksIp', listenConfig.socks_config?.host || '');
+      form.setValue(
+        'socksPort',
+        listenConfig.socks_config?.port.toString() || '',
+      );
+      form.setValue('httpIp', listenConfig.http_config?.host || '');
+      form.setValue(
+        'httpPort',
+        listenConfig.http_config?.port.toString() || '',
+      );
+    }
+  };
+
+  const saveListenConfig = async (data: z.infer<typeof FormSchema>) => {
+    await invoke('set_listen_config', {
+      listenConfig: {
+        socks_ip: data.socksIp,
+        socks_port: parseInt(data.socksPort),
+        http_ip: data.httpIp,
+        http_port: parseInt(data.httpPort),
+      },
+    });
+  };
+
+  useEffect(() => {
+    loadListenConfig();
+  }, []);
 
   return (
     <div>

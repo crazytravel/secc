@@ -7,8 +7,8 @@ export default function Dashboard() {
     <div className="flex flex-1 flex-col">
       <div className="flex flex-col gap-8">
         <SectionCards />
-        <TrafficChart />
         <TrafficLog />
+        <TrafficChart />
       </div>
     </div>
   );

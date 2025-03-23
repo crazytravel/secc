@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
+import { invoke } from '@tauri-apps/api/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -22,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useEffect } from 'react';
 
 const FormSchema = z.object({
   ip: z.string().min(2, {
@@ -32,7 +34,7 @@ const FormSchema = z.object({
   }),
 });
 
-function Server() {
+export default function Server() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -41,18 +43,43 @@ function Server() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     toast('You submitted the following values:', {
       description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+        <pre className="mt-2 w-[320px] rounded-md bg-slate-950 p-4">
+          <code className="text-white w-full">
+            {JSON.stringify(data, null, 2)}
+          </code>
         </pre>
       ),
     });
+    await saveServerConfig(data);
   }
 
+  const loadServerConfig = async () => {
+    let serverConfig = await invoke<ServerConfig>('get_server_config');
+    console.log('server config', serverConfig);
+    if (serverConfig) {
+      form.setValue('ip', serverConfig.host);
+      form.setValue('port', serverConfig.port.toString());
+    }
+  };
+
+  const saveServerConfig = async (data: z.infer<typeof FormSchema>) => {
+    await invoke('set_server_config', {
+      serverConfig: {
+        host: data.ip,
+        port: parseInt(data.port),
+      },
+    });
+  };
+
+  useEffect(() => {
+    loadServerConfig();
+  }, []);
+
   return (
-    <div>
+    <div className="space-y-8">
       <Card>
         <CardHeader>
           <CardTitle>Server Configuration</CardTitle>
@@ -105,8 +132,15 @@ function Server() {
           </div>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Server Installation</CardTitle>
+          <CardDescription>Install secc to your server</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 rounded-md border">TODO</div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-export default Server;
