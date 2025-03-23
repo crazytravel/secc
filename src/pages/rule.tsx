@@ -7,9 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GlobeLock, Waypoints, Power, ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, Waypoints } from 'lucide-react';
 import { useEffect } from 'react';
 
 function Rule() {

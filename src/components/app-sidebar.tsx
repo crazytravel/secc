@@ -1,8 +1,6 @@
 import {
   Gauge,
-  Globe,
   GlobeLock,
-  Power,
   Route,
   Server,
   Settings,
@@ -14,15 +12,14 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { NavLink } from 'react-router';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 export function AppSidebar() {
   // Menu items.
@@ -55,15 +52,18 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar className="">
+    <Sidebar>
       <SidebarHeader>
         <div className="space-y-2">
-          <div className=" flex items-center space-x-4 rounded-md border p-4">
+          <div className=" flex items-center space-x-2 rounded-md border p-4">
             <GlobeLock />
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium leading-none">Secc Connect</p>
             </div>
-            <Switch />
+            <Switch
+              defaultChecked
+              className="data-[state=checked]:bg-green-500"
+            />
           </div>
           <div className=" flex items-center space-x-4 rounded-md border p-4">
             <Tabs defaultValue="auto">
@@ -83,9 +83,7 @@ export function AppSidebar() {
                 <NavLink to={project.url} key={project.title}>
                   {({ isActive }) => (
                     <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className={isActive ? 'bg-gray-600' : ''}
-                      >
+                      <SidebarMenuButton isActive={isActive}>
                         <project.icon />
                         <span>{project.title}</span>
                       </SidebarMenuButton>

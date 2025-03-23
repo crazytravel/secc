@@ -1,23 +1,38 @@
 use std::{fmt, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
-use tauri_plugin_shell::{ShellExt, process::CommandChild};
+use tauri::{AppHandle, Manager, Theme};
+use tauri_plugin_shell::ShellExt;
 
 use crate::menu::{self};
 
 #[derive(Debug)]
-pub struct SidecarState(Option<CommandChild>);
+pub struct SidecarState(u32);
 
 impl SidecarState {
     pub fn default() -> Self {
+        Self(0)
+    }
+    pub fn set(&mut self, pid: u32) {
+        self.0 = pid;
+    }
+    pub fn get(&mut self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Debug)]
+pub struct ThemeState(Option<Theme>);
+
+impl ThemeState {
+    pub fn default() -> Self {
         Self(None)
     }
-    pub fn set(&mut self, child: CommandChild) {
-        self.0 = Some(child);
+    pub fn set(&mut self, theme: Theme) {
+        self.0 = Some(theme);
     }
-    pub fn get(&mut self) -> Option<CommandChild> {
-        self.0.take()
+    pub fn get(&mut self) -> Option<Theme> {
+        self.0
     }
 }
 
@@ -40,6 +55,7 @@ impl fmt::Display for AccessMode {
 
 #[tauri::command]
 pub fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
+    println!("call sidecar function was called");
     let sidecar_command = app.shell().sidecar("secc-agent").unwrap().args([
         "-p",
         "/Users/shuo/secc_config/proxy-list.txt",
@@ -55,10 +71,11 @@ pub fn call_sidecar(app: AppHandle, access_mode: AccessMode) {
     let (_rx, child) = sidecar_command.spawn().unwrap();
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let mut sidecar_state = sidecar_state.lock().unwrap();
-    if child.pid() != 0 {
+    let pid = child.pid();
+    if pid != 0 {
         menu::change_tray_icon(&app, true).unwrap();
     }
-    sidecar_state.set(child);
+    sidecar_state.set(pid);
 }
 
 #[tauri::command]

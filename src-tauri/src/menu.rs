@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 
-use crate::command::{self, SidecarState};
+use crate::command::{self, SidecarState, ThemeState};
 use anyhow::{Error, Ok};
-use tauri::Manager;
+use sysinfo::{Pid, System};
 use tauri::menu::PredefinedMenuItem;
 use tauri::{
     AppHandle,
@@ -10,23 +10,50 @@ use tauri::{
     menu::{CheckMenuItem, MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
 };
+use tauri::{Manager, Theme};
 
 pub const APP_TRAY_ID: &str = "secc-tray";
 
 pub fn change_tray_icon(app: &AppHandle, active: bool) -> Result<(), Error> {
-    let icon_bytes: Vec<u8> = if active {
-        include_bytes!("../icons/tray-icon-active.png").to_vec()
-    } else {
-        include_bytes!("../icons/tray-icon.png").to_vec()
+    let theme = { app.state::<Mutex<ThemeState>>().lock().unwrap().get() };
+    println!("==theme: {:?}", theme);
+    let icon_bytes = {
+        match (active, theme) {
+            (true, Some(tauri::Theme::Dark)) => {
+                println!("active & dark");
+                Some(include_bytes!("../icons/tray-icon-dark-active.png").to_vec())
+            }
+            (false, Some(tauri::Theme::Dark)) => {
+                println!("inactive & dark");
+                Some(include_bytes!("../icons/tray-icon-dark-inactive.png").to_vec())
+            }
+            (true, Some(tauri::Theme::Light)) => {
+                println!("active & light");
+                Some(include_bytes!("../icons/tray-icon-light-active.png").to_vec())
+            }
+            (false, Some(tauri::Theme::Light)) => {
+                println!("inactive & light");
+                Some(include_bytes!("../icons/tray-icon-light-inactive.png").to_vec())
+            }
+            _ => None,
+        }
     };
     if let Some(tray) = app.tray_by_id(APP_TRAY_ID) {
-        tray.set_icon(Some(Image::from_bytes(&icon_bytes)?))?;
+        if let Some(icon_bytes) = icon_bytes {
+            tray.set_icon(Some(Image::from_bytes(&icon_bytes)?))?;
+        }
     }
     Ok(())
 }
 
 pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
-    let icon_bytes = include_bytes!("../icons/tray-icon.png");
+    let theme = app.get_webview_window("main").unwrap().theme().unwrap();
+    println!("theme: {:?}", theme);
+    let icon_bytes = if theme == Theme::Dark {
+        include_bytes!("../icons/tray-icon-dark-active.png").to_vec()
+    } else {
+        include_bytes!("../icons/tray-icon-light-active.png").to_vec()
+    };
     let setting = MenuItem::with_id(app, "setting", "Setting", true, None::<&str>)?;
     let quit = PredefinedMenuItem::quit(app, Some("Quit"))?;
     let auto_model =
@@ -68,7 +95,6 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
         .build()?;
     TrayIconBuilder::with_id(APP_TRAY_ID)
         .tooltip("Secure Connect")
-        .icon_as_template(true)
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "auto_model" => {
                 println!("auto model menu item was clicked");
@@ -77,10 +103,13 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 let app_handle = app.clone();
                 {
                     let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                    let mut sidecar_state = sidecar_state.lock().unwrap();
-                    if let Some(child) = sidecar_state.get() {
-                        if let Err(e) = child.kill() {
-                            eprintln!("Kill sidecar process occur error: {:?}", e);
+                    let pid = sidecar_state.lock().unwrap().get();
+                    let sys = System::new_all();
+                    let pid = Pid::from_u32(pid);
+                    if let Some(process) = sys.process(pid) {
+                        let status = process.kill();
+                        if !status {
+                            eprintln!("Kill sidecar process failed");
                         }
                     }
                 }
@@ -97,10 +126,13 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 let app_handle = app.clone();
                 {
                     let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                    let mut sidecar_state = sidecar_state.lock().unwrap();
-                    if let Some(child) = sidecar_state.get() {
-                        if let Err(e) = child.kill() {
-                            eprintln!("Kill sidecar process occur error: {:?}", e);
+                    let pid = sidecar_state.lock().unwrap().get();
+                    let sys = System::new_all();
+                    let pid = Pid::from_u32(pid);
+                    if let Some(process) = sys.process(pid) {
+                        let status = process.kill();
+                        if !status {
+                            eprintln!("Kill sidecar process failed");
                         }
                     }
                 }
@@ -116,12 +148,13 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
                 let app_handle = app.clone();
                 {
                     let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                    let mut sidecar_state = sidecar_state.lock().unwrap();
-                    if let Some(child) = sidecar_state.get() {
-                        if let Err(e) = child.kill() {
-                            eprintln!("Kill sidecar process occur error: {:?}", e);
-                        } else {
-                            change_tray_icon(app, false).unwrap();
+                    let pid = sidecar_state.lock().unwrap().get();
+                    let sys = System::new_all();
+                    let pid = Pid::from_u32(pid);
+                    if let Some(process) = sys.process(pid) {
+                        let status = process.kill();
+                        if !status {
+                            eprintln!("Kill sidecar process failed");
                         }
                     }
                 }
@@ -150,7 +183,7 @@ pub fn build_menu(app: &AppHandle) -> Result<(), Error> {
             }
         })
         .menu(&menu)
-        .icon(Image::from_bytes(icon_bytes)?)
+        .icon(Image::from_bytes(&icon_bytes)?)
         .build(app)?;
 
     Ok(())

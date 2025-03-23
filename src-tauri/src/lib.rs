@@ -1,8 +1,9 @@
 use std::sync::Mutex;
 
 use anyhow::Error;
-use command::SidecarState;
-use tauri::{App, AppHandle, Manager};
+use command::{SidecarState, ThemeState};
+use sysinfo::{Pid, System};
+use tauri::{App, AppHandle, Manager, Theme};
 mod command;
 mod menu;
 
@@ -14,6 +15,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(SidecarState::default()))
+        .manage(Mutex::new(ThemeState::default()))
         .invoke_handler(tauri::generate_handler![
             command::close_app,
             command::call_sidecar
@@ -23,6 +25,32 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|win, event| {
+            let app = win.app_handle();
+            if let tauri::WindowEvent::ThemeChanged(theme) = event {
+                if *theme == Theme::Dark {
+                    app.state::<Mutex<ThemeState>>()
+                        .lock()
+                        .unwrap()
+                        .set(Theme::Dark);
+                } else {
+                    app.state::<Mutex<ThemeState>>()
+                        .lock()
+                        .unwrap()
+                        .set(Theme::Light);
+                }
+                let pid = app.state::<Mutex<SidecarState>>().lock().unwrap().get();
+                let sys = System::new_all();
+                let pid = Pid::from_u32(pid);
+                println!("pid: {}", pid);
+                if sys.process(pid).is_some() {
+                    println!("process exist");
+                    menu::change_tray_icon(app, true).unwrap();
+                } else {
+                    println!("process not exist");
+                    menu::change_tray_icon(app, false).unwrap();
+                }
+            }
+
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 #[cfg(not(target_os = "macos"))]
                 {
@@ -44,11 +72,15 @@ pub fn run() {
                 let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
                 let mut sidecar_state = sidecar_state.lock().unwrap();
                 command::switch_to_direct(app_handle);
-                sidecar_state
-                    .get()
-                    .unwrap()
-                    .kill()
-                    .expect("kill sidecar process failed");
+                let pid = sidecar_state.get();
+                let sys = System::new_all();
+                let pid = Pid::from_u32(pid);
+                if let Some(process) = sys.process(pid) {
+                    let status = process.kill();
+                    if !status {
+                        eprintln!("Kill sidecar process failed");
+                    }
+                }
                 println!("---clean up end---");
             }
         });
