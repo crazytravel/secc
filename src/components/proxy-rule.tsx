@@ -32,7 +32,7 @@ function ProxyRule() {
         </pre>
       ),
     });
-    await saveDirectRules(data);
+    await saveProxyRules(data);
   }
 
   const loadProxyRules = async () => {
@@ -42,9 +42,9 @@ function ProxyRule() {
     }
   };
 
-  const saveDirectRules = async (data: z.infer<typeof FormSchema>) => {
+  const saveProxyRules = async (data: z.infer<typeof FormSchema>) => {
     await invoke('set_proxy_rules', {
-      directRules: data.proxyRules,
+      proxyRules: data.proxyRules,
     });
   };
 

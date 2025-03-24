@@ -20,13 +20,19 @@ use crate::{
 pub fn open_secc(app: AppHandle) {
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let mut sidecar_state = sidecar_state.lock().unwrap();
-    if sidecar_state.get() != 0 {
-        return;
+    let pid = sidecar_state.get();
+    let sys = System::new_all();
+    let pid = Pid::from_u32(pid);
+    if let Some(process) = sys.process(pid) {
+        let status = process.kill();
+        if !status {
+            eprintln!("Kill sidecar process failed");
+        }
     }
-    let access_mode = AccessMode::Auto;
     let app_handle = app.clone();
+    switch_to_socks(app_handle.clone());
     tauri::async_runtime::spawn(async move {
-        call_sidecar(&app_handle, access_mode);
+        call_sidecar(&app_handle, AccessMode::Auto);
     });
 }
 
