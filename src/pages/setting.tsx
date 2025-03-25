@@ -50,14 +50,9 @@ function Setting() {
   });
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast('You submitted the following values:', {
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-    await saveListenConfig(data);
+    let res = await saveListenConfig(data);
+    console.log(res);
+    toast('success');
   }
 
   const loadListenConfig = async () => {
@@ -77,7 +72,7 @@ function Setting() {
   };
 
   const saveListenConfig = async (data: z.infer<typeof FormSchema>) => {
-    await invoke('set_listen_config', {
+    let res = await invoke('set_listen_config', {
       listenConfig: {
         socks_ip: data.socksIp,
         socks_port: parseInt(data.socksPort),
@@ -85,6 +80,7 @@ function Setting() {
         http_port: parseInt(data.httpPort),
       },
     });
+    return res;
   };
 
   useEffect(() => {
