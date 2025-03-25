@@ -1,13 +1,12 @@
 use std::sync::Mutex;
 
 use anyhow::Error;
-use command::{SidecarState, ThemeState};
-use sysinfo::{Pid, System};
-use tauri::{App, AppHandle, Manager, Theme};
+use command::SidecarState;
+use tauri::{App, Manager};
 mod command;
-mod menu;
 mod server;
 mod store;
+mod tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,7 +17,6 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(SidecarState::default()))
-        .manage(Mutex::new(ThemeState::default()))
         .invoke_handler(tauri::generate_handler![
             command::close_app,
             command::set_server_config,
@@ -51,32 +49,6 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|win, event| {
-            let app = win.app_handle();
-            if let tauri::WindowEvent::ThemeChanged(theme) = event {
-                if *theme == Theme::Dark {
-                    app.state::<Mutex<ThemeState>>()
-                        .lock()
-                        .unwrap()
-                        .set(Theme::Dark);
-                } else {
-                    app.state::<Mutex<ThemeState>>()
-                        .lock()
-                        .unwrap()
-                        .set(Theme::Light);
-                }
-                let pid = app.state::<Mutex<SidecarState>>().lock().unwrap().get();
-                let sys = System::new_all();
-                let pid = Pid::from_u32(pid);
-                println!("pid: {}", pid);
-                if sys.process(pid).is_some() {
-                    println!("process exist");
-                    menu::change_tray_icon(app, true).unwrap();
-                } else {
-                    println!("process not exist");
-                    menu::change_tray_icon(app, false).unwrap();
-                }
-            }
-
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 #[cfg(not(target_os = "macos"))]
                 {
@@ -95,18 +67,7 @@ pub fn run() {
             if let tauri::RunEvent::Exit { .. } = event {
                 // clean up things
                 println!("---clean up start---");
-                let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                let mut sidecar_state = sidecar_state.lock().unwrap();
-                command::switch_to_direct(app_handle.clone());
-                let pid = sidecar_state.get();
-                let sys = System::new_all();
-                let pid = Pid::from_u32(pid);
-                if let Some(process) = sys.process(pid) {
-                    let status = process.kill();
-                    if !status {
-                        eprintln!("Kill sidecar process failed");
-                    }
-                }
+                command::close_secc(app_handle.clone());
                 println!("---clean up end---");
             }
         });
@@ -118,19 +79,7 @@ fn init_setup(app: &mut App) -> Result<(), Error> {
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
     // add tray menu
-    menu::build_menu(app.handle())?;
-    auto_start(app.handle().clone());
+    tray::build_tray(app.handle())?;
+    command::open_secc(app.handle().clone());
     Ok(())
-}
-
-fn auto_start(app: AppHandle) {
-    let cloned_app = app.clone();
-    // Start the sidecar when the app starts
-    tauri::async_runtime::spawn(async move {
-        command::call_sidecar(&app, command::AccessMode::Auto);
-    });
-    // Auto set proxy address
-    tauri::async_runtime::spawn(async move {
-        command::switch_to_socks(cloned_app);
-    });
 }

@@ -7,11 +7,11 @@ use std::{
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use sysinfo::{Pid, System};
-use tauri::{AppHandle, Emitter, Manager, Theme};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_shell::{ShellExt, process::CommandEvent};
 
 use crate::{
-    menu::{self},
+    tray::{self},
     server::{ListenConfig, ListenConfigOption, ServerConfig},
     store,
 };
@@ -50,7 +50,7 @@ pub fn close_secc(app: AppHandle) {
             eprintln!("Kill sidecar process failed");
             return;
         }
-        menu::change_tray_icon(&app, false).unwrap();
+        tray::change_tray_icon(&app, false).unwrap();
     }
 }
 
@@ -459,7 +459,7 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode) {
     let mut sidecar_state = sidecar_state.lock().unwrap();
     let pid = child.pid();
     if pid != 0 {
-        menu::change_tray_icon(app, true).unwrap();
+        tray::change_tray_icon(app, true).unwrap();
     }
     sidecar_state.set(pid);
 
@@ -477,21 +477,6 @@ impl SidecarState {
         self.0 = pid;
     }
     pub fn get(&mut self) -> u32 {
-        self.0
-    }
-}
-
-#[derive(Debug)]
-pub struct ThemeState(Option<Theme>);
-
-impl ThemeState {
-    pub fn default() -> Self {
-        Self(None)
-    }
-    pub fn set(&mut self, theme: Theme) {
-        self.0 = Some(theme);
-    }
-    pub fn get(&mut self) -> Option<Theme> {
         self.0
     }
 }

@@ -116,7 +116,7 @@ export function AppSidebar() {
             >
               <TabsList>
                 <TabsTrigger value="Auto">Auto Mode</TabsTrigger>
-                <TabsTrigger value="Proxy">Proxy Mode</TabsTrigger>
+                <TabsTrigger value="Proxy">Global Mode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
