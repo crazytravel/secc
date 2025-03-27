@@ -1,9 +1,6 @@
-use std::sync::Mutex;
-
-use crate::command::{self, SidecarState};
+use crate::command::{self};
+use crate::state::{self};
 use anyhow::{Error, Ok};
-use sysinfo::{Pid, System};
-use tauri::Manager;
 use tauri::menu::PredefinedMenuItem;
 use tauri::{
     AppHandle,
@@ -73,45 +70,12 @@ pub fn build_tray(app: &AppHandle) -> Result<(), Error> {
             "auto_model" => {
                 println!("auto model menu item was clicked");
                 toggle_model(&auto_model, &proxy_model, &direct_model, "auto_model");
-                let app_handle = app.clone();
-                {
-                    let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                    let pid = sidecar_state.lock().unwrap().get();
-                    let sys = System::new_all();
-                    let pid = Pid::from_u32(pid);
-                    if let Some(process) = sys.process(pid) {
-                        let status = process.kill();
-                        if !status {
-                            eprintln!("Kill sidecar process failed");
-                        }
-                    }
-                }
-                let app_handle = app.clone();
-                tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(&app_handle, command::AccessMode::Auto);
-                });
+                command::switch_access_mode(app.clone(), state::AccessMode::Auto);
             }
             "proxy_model" => {
                 println!("socks model menu item was clicked");
                 toggle_model(&auto_model, &proxy_model, &direct_model, "proxy_model");
-
-                let app_side_handle = app.clone();
-                let app_handle = app.clone();
-                {
-                    let sidecar_state = app_handle.state::<Mutex<SidecarState>>();
-                    let pid = sidecar_state.lock().unwrap().get();
-                    let sys = System::new_all();
-                    let pid = Pid::from_u32(pid);
-                    if let Some(process) = sys.process(pid) {
-                        let status = process.kill();
-                        if !status {
-                            eprintln!("Kill sidecar process failed");
-                        }
-                    }
-                }
-                tauri::async_runtime::spawn(async move {
-                    command::call_sidecar(&app_side_handle, command::AccessMode::Proxy);
-                });
+                command::switch_access_mode(app.clone(), state::AccessMode::Proxy);
             }
             "direct_model" => {
                 println!("direct model menu item was clicked");
@@ -121,12 +85,12 @@ pub fn build_tray(app: &AppHandle) -> Result<(), Error> {
             "socks_model" => {
                 println!("socks proxy model menu item was clicked");
                 toggle_protocol(&socks_model, &http_model, "socks_model");
-                command::switch_bind_mode(app.clone(), command::BindMode::Socks);
+                command::switch_bind_mode(app.clone(), state::BindMode::Socks);
             }
             "http_model" => {
                 println!("http proxy model menu item was clicked");
                 toggle_protocol(&socks_model, &http_model, "http_model");
-                command::switch_bind_mode(app.clone(), command::BindMode::Http);
+                command::switch_bind_mode(app.clone(), state::BindMode::Http);
             }
             "setting" => {
                 println!("setting menu item was clicked");

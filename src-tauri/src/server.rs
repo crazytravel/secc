@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ServerConfig {
+pub struct AddrInfo {
     pub host: String,
     pub port: u16,
 }
 
-impl ServerConfig {
+impl AddrInfo {
     pub fn new(host: String, port: u16) -> Self {
         Self { host, port }
     }
@@ -29,12 +29,12 @@ pub struct ListenConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListenConfigOption {
-    pub socks_config: Option<ServerConfig>,
-    pub http_config: Option<ServerConfig>,
+    pub socks_config: Option<AddrInfo>,
+    pub http_config: Option<AddrInfo>,
 }
 
 impl ListenConfigOption {
-    pub fn new(socks_config: Option<ServerConfig>, http_config: Option<ServerConfig>) -> Self {
+    pub fn new(socks_config: Option<AddrInfo>, http_config: Option<AddrInfo>) -> Self {
         Self {
             socks_config,
             http_config,

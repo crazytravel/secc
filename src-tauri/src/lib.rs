@@ -1,10 +1,12 @@
 use std::sync::Mutex;
 
 use anyhow::Error;
-use command::SidecarState;
+use state::SidecarState;
 use tauri::{App, Manager};
 mod command;
 mod server;
+mod shell;
+mod state;
 mod store;
 mod tray;
 
@@ -36,7 +38,9 @@ pub fn run() {
             command::close_secc,
             command::switch_access_mode,
             command::get_access_mode,
-            command::get_bind_mode
+            command::get_bind_mode,
+            command::switch_protocol_mode,
+            command::get_protocol_mode,
         ])
         .setup(|app| {
             let app_handle = app.app_handle().clone();

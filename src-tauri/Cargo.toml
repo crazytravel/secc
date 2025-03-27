@@ -31,3 +31,4 @@ rustls-cert-gen = "0.1.0"
 tauri-plugin-store = "2"
 sysinfo = "0.33.1"
 tauri-plugin-http = "2"
+strum = { version = "0.27.1", features = ["derive"] }

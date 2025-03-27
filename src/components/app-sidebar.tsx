@@ -53,8 +53,9 @@ export function AppSidebar() {
     },
   ];
 
-  const [accessMode, setAccessMode] = useState('Auto');
-  const [bindMode, setBindMode] = useState('Socks');
+  const [accessMode, setAccessMode] = useState('auto');
+  const [bindMode, setBindMode] = useState('socks');
+  const [protocolMode, setProtocolMode] = useState('quic');
 
   const handleSeccSwitch = async (checked: boolean) => {
     console.log('checked', checked);
@@ -75,6 +76,11 @@ export function AppSidebar() {
     await invoke('switch_bind_mode', { bindMode: value });
   };
 
+  const handleProtocolModeSwitch = async (value: string) => {
+    console.log('value', value);
+    await invoke('switch_protocol_mode', { protocolMode: value });
+  };
+
   const getAccessMode = async () => {
     let accessMode = await invoke<string>('get_access_mode');
     if (accessMode) {
@@ -89,9 +95,17 @@ export function AppSidebar() {
     }
   };
 
+  const getProtocolMode = async () => {
+    let protocolMode = await invoke<string>('get_protocol_mode');
+    if (protocolMode) {
+      setProtocolMode(protocolMode);
+    }
+  };
+
   useEffect(() => {
     getAccessMode();
     getBindMode();
+    getProtocolMode();
   }, []);
 
   return (
@@ -109,22 +123,33 @@ export function AppSidebar() {
               onCheckedChange={handleSeccSwitch}
             />
           </div>
-          <div className=" flex items-center space-x-4 rounded-md border p-4">
+          <div className="flex items-center space-x-4 rounded-md border p-4">
             <Tabs
               defaultValue={accessMode}
               onValueChange={handleAccessModeSwitch}
             >
               <TabsList>
-                <TabsTrigger value="Auto">Auto Mode</TabsTrigger>
-                <TabsTrigger value="Proxy">Global Mode</TabsTrigger>
+                <TabsTrigger value="auto">Auto Mode</TabsTrigger>
+                <TabsTrigger value="proxy">Global Mode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
-          <div className=" flex items-center space-x-4 rounded-md border p-4">
+          <div className="flex items-center space-x-4 rounded-md border p-4">
             <Tabs defaultValue={bindMode} onValueChange={handleBindModeSwitch}>
               <TabsList>
-                <TabsTrigger value="Socks">Socks Mode</TabsTrigger>
-                <TabsTrigger value="Http">Http Mode</TabsTrigger>
+                <TabsTrigger value="socks">Socks Mode</TabsTrigger>
+                <TabsTrigger value="http">Http Mode</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <div className="flex items-center space-x-4 rounded-md border p-4">
+            <Tabs
+              defaultValue={protocolMode}
+              onValueChange={handleProtocolModeSwitch}
+            >
+              <TabsList>
+                <TabsTrigger value="quic">Quic Mode</TabsTrigger>
+                <TabsTrigger value="tcp-udp">TcpUdp Mode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
