@@ -1,5 +1,5 @@
 import DirectRule from '@/components/direct-rule';
-import ProxyRule from '@/components/proxy-rule';
+import CustomProxyRule from '@/components/custom-proxy-rule';
 import {
   Card,
   CardContent,
@@ -8,11 +8,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ArrowRightLeft, Waypoints } from 'lucide-react';
-import { useEffect } from 'react';
+import CombinedProxyRule from '@/components/combind-proxy-rule';
 
 function Rule() {
-  useEffect(() => {}, []);
-
+  const reload = () => {
+    window.location.reload();
+  };
   return (
     <div>
       <Card>
@@ -37,10 +38,23 @@ function Rule() {
               <div className="flex items-center space-x-4">
                 <Waypoints />
                 <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">Proxy Rule</p>
+                  <p className="text-sm font-medium leading-none">
+                    Custom Proxy Rule
+                  </p>
                 </div>
               </div>
-              <ProxyRule />
+              <CustomProxyRule callback={reload} />
+            </div>
+            <div className="rounded-md border space-y-4 p-4">
+              <div className="flex items-center space-x-4">
+                <Waypoints />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Combined Proxy Rule
+                  </p>
+                </div>
+              </div>
+              <CombinedProxyRule />
             </div>
           </div>
         </CardContent>

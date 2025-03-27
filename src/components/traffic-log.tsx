@@ -9,28 +9,15 @@ import { listen } from '@tauri-apps/api/event';
 import { Logs } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
 
 // Key for storing logs in local storage
 const LOG_STORAGE_KEY = 'secc-traffic-logs';
 
 export default function TrafficLog() {
-  const logRef = useRef<HTMLElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const logsCache = useRef<string>(localStorage.getItem(LOG_STORAGE_KEY) || '');
-
-  // Load cached logs on component mount
-  useEffect(() => {
-    if (logRef.current && logsCache.current) {
-      logRef.current.innerText = logsCache.current;
-
-      // Scroll to bottom initially if there are cached logs
-      setTimeout(() => {
-        if (containerRef.current) {
-          containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        }
-      }, 0);
-    }
-  }, []);
 
   useEffect(() => {
     const unLogListen = listen('secc-agent-log', (event) => {
@@ -48,16 +35,8 @@ export default function TrafficLog() {
 
       // Update local storage without triggering renders
       localStorage.setItem(LOG_STORAGE_KEY, logsCache.current);
-
-      // Direct DOM manipulation
       if (logRef.current) {
         logRef.current.innerText = logsCache.current;
-      }
-
-      console.log(containerRef.current?.scrollHeight);
-      // Scroll to bottom
-      if (containerRef.current) {
-        containerRef.current.scrollTop = containerRef.current.scrollHeight;
       }
     });
     return () => {
@@ -70,22 +49,23 @@ export default function TrafficLog() {
     logsCache.current = '';
     localStorage.removeItem(LOG_STORAGE_KEY);
     if (logRef.current) {
-      logRef.current.innerText = '';
+      logRef.current.textContent = '';
     }
   };
   return (
     <div>
-      <Card className="p-2">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Logs /> <div>Traffic Log</div>
           </CardTitle>
         </CardHeader>
-        <CardContent
-          ref={containerRef}
-          className="h-80 overflow-y-auto rounded-md border p-1"
-        >
-          <code ref={logRef} className="w-full text-[12px]"></code>
+        <CardContent>
+          <ScrollArea className="h-72 w-full rounded-md border">
+            <div ref={containerRef} className="h-full overflow-auto">
+              <div ref={logRef} className="p-2 text-sm"></div>
+            </div>
+          </ScrollArea>
         </CardContent>
         <CardFooter>
           <Button onClick={clearLogs} variant="outline">

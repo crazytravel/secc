@@ -43,7 +43,7 @@ pub fn close_secc(app: AppHandle) {
 #[tauri::command]
 pub fn switch_access_mode(app: AppHandle, access_mode: AccessMode) {
     println!("access_mode: {:?}", access_mode);
-    store::set_mode(&app, store::ACCESS_MODE, access_mode.to_string().as_str()).unwrap();
+    store::set_str_config(&app, store::ACCESS_MODE, access_mode.to_string().as_str()).unwrap();
     open_secc(app);
 }
 
@@ -59,7 +59,7 @@ pub fn switch_bind_mode(app: AppHandle, bind_mode: BindMode) {
             shell::switch_to_http(app);
         }
     }
-    store::set_mode(
+    store::set_str_config(
         &app_handle,
         store::BIND_MODE,
         bind_mode.to_string().as_str(),
@@ -71,7 +71,7 @@ pub fn switch_bind_mode(app: AppHandle, bind_mode: BindMode) {
 pub fn switch_protocol_mode(app: AppHandle, protocol_mode: ProtocolMode) {
     let app_handle = app.clone();
     println!("protocol_mode: {:?}", protocol_mode);
-    store::set_mode(
+    store::set_str_config(
         &app_handle,
         store::PROTOCOL_MODE,
         protocol_mode.to_string().as_str(),
@@ -82,7 +82,7 @@ pub fn switch_protocol_mode(app: AppHandle, protocol_mode: ProtocolMode) {
 
 #[tauri::command]
 pub fn get_access_mode(app: AppHandle) -> AccessMode {
-    store::get_mode(&app, store::ACCESS_MODE)
+    store::get_str_config(&app, store::ACCESS_MODE)
         .ok()
         .flatten()
         .and_then(|access_mode| access_mode.parse().ok())
@@ -91,7 +91,7 @@ pub fn get_access_mode(app: AppHandle) -> AccessMode {
 
 #[tauri::command]
 pub fn get_bind_mode(app: AppHandle) -> BindMode {
-    store::get_mode(&app, store::BIND_MODE)
+    store::get_str_config(&app, store::BIND_MODE)
         .ok()
         .flatten()
         .and_then(|bind_mode| bind_mode.parse().ok())
@@ -100,7 +100,7 @@ pub fn get_bind_mode(app: AppHandle) -> BindMode {
 
 #[tauri::command]
 pub fn get_protocol_mode(app: AppHandle) -> ProtocolMode {
-    store::get_mode(&app, store::PROTOCOL_MODE)
+    store::get_str_config(&app, store::PROTOCOL_MODE)
         .ok()
         .flatten()
         .and_then(|protocol_mode| protocol_mode.parse().ok())
@@ -150,13 +150,19 @@ pub fn get_direct_rules(app: AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn set_proxy_rules(app: AppHandle, proxy_rules: &str) {
+pub fn set_custom_proxy_rules(app: AppHandle, proxy_rules: &str) {
     println!("request body: {:#?}", proxy_rules);
-    store::set_rules(&app, store::PROXY_RULES_PATH, proxy_rules).unwrap();
+    store::set_rules(&app, store::CUSTOM_PROXY_RULES_PATH, proxy_rules).unwrap();
 }
 
 #[tauri::command]
-pub fn get_proxy_rules(app: AppHandle) -> String {
+pub fn get_custom_proxy_rules(app: AppHandle) -> String {
+    let result = store::get_rules(&app, store::CUSTOM_PROXY_RULES_PATH);
+    result.unwrap_or("".to_string())
+}
+
+#[tauri::command]
+pub fn get_combined_proxy_rules(app: AppHandle) -> String {
     let result = store::get_rules(&app, store::PROXY_RULES_PATH);
     result.unwrap_or("".to_string())
 }

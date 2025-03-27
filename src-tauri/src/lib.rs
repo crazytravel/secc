@@ -27,8 +27,8 @@ pub fn run() {
             command::get_listen_config,
             command::set_direct_rules,
             command::get_direct_rules,
-            command::set_proxy_rules,
-            command::get_proxy_rules,
+            command::set_custom_proxy_rules,
+            command::get_custom_proxy_rules,
             command::set_cert,
             command::get_cert,
             command::set_cert_key,
@@ -41,14 +41,9 @@ pub fn run() {
             command::get_bind_mode,
             command::switch_protocol_mode,
             command::get_protocol_mode,
+            command::get_combined_proxy_rules
         ])
         .setup(|app| {
-            let app_handle = app.app_handle().clone();
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = store::init_all(&app_handle).await {
-                    eprintln!("initial config files error: {:?}", e);
-                }
-            });
             init_setup(app)?;
             Ok(())
         })
@@ -82,8 +77,19 @@ fn init_setup(app: &mut App) -> Result<(), Error> {
     {
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
+    let app_handle = app.app_handle().clone();
+    if let Err(e) = store::init_all(&app_handle) {
+        eprintln!("initial config files error: {:?}", e);
+    }
     // add tray menu
     tray::build_tray(app.handle())?;
     command::open_secc(app.handle().clone());
+
+    let app_handle = app.app_handle().clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = store::load_community_proxy_list(&app_handle).await {
+            eprintln!("initial config files error: {:?}", e);
+        }
+    });
     Ok(())
 }

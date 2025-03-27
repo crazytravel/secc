@@ -19,7 +19,7 @@ const FormSchema = z.object({
   proxyRules: z.string(),
 });
 
-function ProxyRule() {
+function CustomProxyRule({ callback }: { callback: () => void }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
@@ -27,17 +27,18 @@ function ProxyRule() {
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     await saveProxyRules(data);
     toast('success');
+    callback();
   }
 
   const loadProxyRules = async () => {
-    let proxyRules = await invoke<string>('get_proxy_rules');
+    let proxyRules = await invoke<string>('get_custom_proxy_rules');
     if (proxyRules) {
       form.setValue('proxyRules', proxyRules);
     }
   };
 
   const saveProxyRules = async (data: z.infer<typeof FormSchema>) => {
-    await invoke('set_proxy_rules', {
+    await invoke('set_custom_proxy_rules', {
       proxyRules: data.proxyRules,
     });
   };
@@ -74,4 +75,4 @@ function ProxyRule() {
   );
 }
 
-export default ProxyRule;
+export default CustomProxyRule;
