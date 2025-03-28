@@ -1,10 +1,12 @@
-use tauri::AppHandle;
+use std::sync::Mutex;
+
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
-    server::{AddrInfo, ListenConfig, ListenConfigOption},
+    server::{AddrInfo, ListenConfig, ListenConfigOption, ServerInfo},
     shell,
-    state::{AccessMode, BindMode, ProtocolMode},
-    store::{self, HTTP_ADDR, SERVER_ADDR, SOCKS_ADDR},
+    state::{AccessMode, AgentState, BindMode, ProtocolMode},
+    store::{self, HTTP_ADDR, SOCKS_ADDR},
     tray::{self},
 };
 
@@ -29,6 +31,11 @@ pub fn open_secc(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         shell::call_sidecar(&app_handle, access_mode, protocol_mode);
     });
+    {
+        let agent_state = app.state::<Mutex<AgentState>>();
+        let mut agent_state = agent_state.lock().unwrap();
+        agent_state.set(true);
+    }
 }
 
 #[tauri::command]
@@ -38,6 +45,11 @@ pub fn close_secc(app: AppHandle) {
     }
     shell::switch_to_direct(app.clone());
     tray::change_tray_icon(&app, false).unwrap();
+    {
+        let agent_state = app.state::<Mutex<AgentState>>();
+        let mut agent_state = agent_state.lock().unwrap();
+        agent_state.set(false);
+    }
 }
 
 #[tauri::command]
@@ -108,15 +120,53 @@ pub fn get_protocol_mode(app: AppHandle) -> ProtocolMode {
 }
 
 #[tauri::command]
-pub fn set_server_config(app: AppHandle, server_config: AddrInfo) {
-    println!("request body: {:#?}", server_config);
-    store::set_address(&app, SERVER_ADDR, server_config).unwrap();
+pub fn get_servers(app: AppHandle) -> Option<Vec<ServerInfo>> {
+    let result = store::get_servers(&app);
+    result.unwrap_or_default()
 }
 
 #[tauri::command]
-pub fn get_server_config(app: AppHandle) -> Option<AddrInfo> {
-    let result = store::get_address(&app, SERVER_ADDR);
+pub fn get_server(app: AppHandle, host: &str) -> Option<ServerInfo> {
+    let result = store::get_server(&app, host);
     result.unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn add_server(app: AppHandle, server: ServerInfo) {
+    store::add_server(&app, server).unwrap();
+    app.emit("refresh_servers", ()).unwrap();
+}
+
+#[tauri::command]
+pub fn delete_server(app: AppHandle, host: &str) {
+    let cloned_app = app.clone();
+    let res = store::get_str_config(&app, store::ACTIVE_SERVER);
+    if let Ok(Some(server)) = res {
+        if server == host {
+            store::set_str_config(&cloned_app, store::ACTIVE_SERVER, "").unwrap();
+            app.emit("active_server_disable", ()).unwrap();
+            close_secc(app.clone());
+        }
+    }
+    store::delete_server(&app, host).unwrap();
+    app.emit("refresh_servers", ()).unwrap();
+}
+
+#[tauri::command]
+pub fn update_server(app: AppHandle, server: ServerInfo) {
+    store::update_server(&app, server).unwrap();
+    app.emit("refresh_servers", ()).unwrap();
+}
+
+#[tauri::command]
+pub fn active_server(app: AppHandle, host: &str) {
+    store::set_str_config(&app, store::ACTIVE_SERVER, host).unwrap();
+}
+
+#[tauri::command]
+pub fn get_active_server(app: AppHandle) -> Option<String> {
+    let res = store::get_str_config(&app, store::ACTIVE_SERVER);
+    res.ok().flatten()
 }
 
 #[tauri::command]
@@ -150,9 +200,13 @@ pub fn get_direct_rules(app: AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn set_custom_proxy_rules(app: AppHandle, proxy_rules: &str) {
-    println!("request body: {:#?}", proxy_rules);
+pub fn set_custom_proxy_rules(app: AppHandle, proxy_rules: &str, url: &str) {
+    println!("request body: {:#?}, {}", proxy_rules, url);
     store::set_rules(&app, store::CUSTOM_PROXY_RULES_PATH, proxy_rules).unwrap();
+    store::set_str_config(&app, store::COMMUNITY_RULES, url).unwrap();
+    tauri::async_runtime::spawn(async move {
+        store::load_community_proxy_list(&app).await.unwrap();
+    });
 }
 
 #[tauri::command]

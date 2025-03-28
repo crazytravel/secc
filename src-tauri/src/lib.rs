@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use anyhow::Error;
-use state::SidecarState;
+use state::{AgentState, SidecarState};
 use tauri::{App, Manager};
 mod command;
 mod server;
@@ -19,10 +19,9 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(SidecarState::default()))
+        .manage(Mutex::new(AgentState::default()))
         .invoke_handler(tauri::generate_handler![
             command::close_app,
-            command::set_server_config,
-            command::get_server_config,
             command::set_listen_config,
             command::get_listen_config,
             command::set_direct_rules,
@@ -41,7 +40,14 @@ pub fn run() {
             command::get_bind_mode,
             command::switch_protocol_mode,
             command::get_protocol_mode,
-            command::get_combined_proxy_rules
+            command::get_combined_proxy_rules,
+            command::get_servers,
+            command::get_server,
+            command::add_server,
+            command::update_server,
+            command::delete_server,
+            command::active_server,
+            command::get_active_server
         ])
         .setup(|app| {
             init_setup(app)?;

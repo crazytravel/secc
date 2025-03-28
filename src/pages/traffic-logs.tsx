@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -5,21 +6,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { listen } from '@tauri-apps/api/event';
-import { Logs } from 'lucide-react';
+import { Loader, ScrollText } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { Button } from './ui/button';
-import { ScrollArea } from './ui/scroll-area';
 
 // Key for storing logs in local storage
 const LOG_STORAGE_KEY = 'secc-traffic-logs';
 
-export default function TrafficLog() {
+export default function TrafficLogs() {
   const logRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const logsCache = useRef<string>(localStorage.getItem(LOG_STORAGE_KEY) || '');
 
   useEffect(() => {
+    if (logRef.current) {
+      logRef.current.innerText = logsCache.current;
+    }
     const unLogListen = listen('secc-agent-log', (event) => {
       const newLog = event.payload as string;
 
@@ -27,9 +30,9 @@ export default function TrafficLog() {
       logsCache.current += newLog;
 
       // Optional: Trim logs if they exceed max size
-      if (logsCache.current.length > 500000) {
+      if (logsCache.current.length > 50000) {
         logsCache.current = logsCache.current.substring(
-          logsCache.current.length - 500000,
+          logsCache.current.length - 50000,
         );
       }
 
@@ -57,18 +60,20 @@ export default function TrafficLog() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Logs /> <div>Traffic Log</div>
+            <ScrollText /> <div>Traffic Logs</div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-72 w-full rounded-md border">
+          <ScrollArea className="h-130 w-full rounded-md border">
             <div ref={containerRef} className="h-full overflow-auto">
-              <div ref={logRef} className="p-2 text-sm"></div>
+              <div ref={logRef} className="p-2 text-sm">
+                <Loader className="animate-spin" />
+              </div>
             </div>
           </ScrollArea>
         </CardContent>
         <CardFooter>
-          <Button onClick={clearLogs} variant="outline">
+          <Button onClick={clearLogs} variant="default">
             Clear Logs
           </Button>
         </CardFooter>

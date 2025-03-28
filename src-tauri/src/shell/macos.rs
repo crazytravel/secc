@@ -6,7 +6,7 @@ use tauri_plugin_shell::process::CommandEvent;
 
 use crate::{
     state::{AccessMode, ProtocolMode, SidecarState},
-    store::{self, CERT_PATH, DIRECT_RULES_PATH, PROXY_RULES_PATH, SERVER_ADDR},
+    store::{self, CERT_PATH, DIRECT_RULES_PATH, PROXY_RULES_PATH},
     tray,
 };
 
@@ -231,8 +231,23 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: Pro
             cert_path = the_cert_path.to_string();
         }
     }
-    if let Ok(Some(config)) = store::get_address(app, SERVER_ADDR) {
-        server_addr = format!("{}:{}", config.host, config.port);
+    if let Ok(Some(host)) = store::get_str_config(app, store::ACTIVE_SERVER) {
+        if let Ok(Some(server)) = store::get_server(app, host.as_str()) {
+            match protocol_mode {
+                ProtocolMode::Quic => {
+                    server_addr = format!("{}:{}", server.host, server.quic_port);
+                }
+                ProtocolMode::TcpUdp => {
+                    if let Some(tcp_port) = server.tcp_port {
+                        server_addr = format!("{}:{}", server.host, tcp_port);
+                    }
+                }
+            }
+            let cert = server.cert;
+            let cert_key = server.cert_key;
+            store::set_cert(app, store::CERT_PATH, &cert).unwrap();
+            store::set_cert(app, store::CERT_KEY_PATH, &cert_key).unwrap();
+        }
     }
 
     let sidecar_command = app
@@ -277,11 +292,13 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: Pro
             }
         }
     });
-    let sidecar_state = app.state::<Mutex<SidecarState>>();
-    let mut sidecar_state = sidecar_state.lock().unwrap();
     let pid = child.pid();
+    {
+        let sidecar_state = app.state::<Mutex<SidecarState>>();
+        let mut sidecar_state = sidecar_state.lock().unwrap();
+        sidecar_state.set(pid);
+    }
     if pid != 0 {
         tray::change_tray_icon(app, true).unwrap();
     }
-    sidecar_state.set(pid);
 }

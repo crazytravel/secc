@@ -47,7 +47,7 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: Pro
 
 pub fn kill_sidecar(app: &AppHandle) -> Result<(), Error> {
     let sidecar_state = app.state::<Mutex<SidecarState>>();
-    let mut sidecar_state = sidecar_state.lock().unwrap();
+    let sidecar_state = sidecar_state.lock().unwrap();
     let pid = sidecar_state.get();
     let sys = System::new_all();
     let pid = Pid::from_u32(pid);

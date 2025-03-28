@@ -1,13 +1,17 @@
+use std::sync::Mutex;
+
 use crate::command::{self};
-use crate::state::{self};
+use crate::state::{self, AccessMode, AgentState, BindMode};
 use anyhow::{Error, Ok};
 use tauri::menu::PredefinedMenuItem;
+use tauri::tray::TrayIconEvent;
 use tauri::{
     AppHandle,
     image::Image,
     menu::{CheckMenuItem, MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
 };
+use tauri::{Emitter, Manager};
 
 pub const APP_TRAY_ID: &str = "secc-tray";
 
@@ -29,7 +33,7 @@ pub fn change_tray_icon(app: &AppHandle, active: bool) -> Result<(), Error> {
 
 pub fn build_tray(app: &AppHandle) -> Result<(), Error> {
     let icon_bytes = include_bytes!("../icons/tray-icon-inactive.png");
-    let setting = MenuItem::with_id(app, "setting", "Setting", true, None::<&str>)?;
+    let setting = MenuItem::with_id(app, "setting", "Settings", true, None::<&str>)?;
     let quit = PredefinedMenuItem::quit(app, Some("Quit"))?;
     let auto_model =
         CheckMenuItem::with_id(app, "auto_model", "Auto Model", false, true, None::<&str>)?;
@@ -63,9 +67,71 @@ pub fn build_tray(app: &AppHandle) -> Result<(), Error> {
         .item(&setting)
         .item(&quit)
         .build()?;
+
+    let auto_model_clone = auto_model.clone();
+    let proxy_model_clone = proxy_model.clone();
+    let direct_model_clone = direct_model.clone();
+    let socks_model_clone = socks_model.clone();
+    let http_model_clone = http_model.clone();
     TrayIconBuilder::with_id(APP_TRAY_ID)
         .icon_as_template(true)
         .tooltip("Secure Connect")
+        .on_tray_icon_event(move |tray_icon, event| {
+            if let TrayIconEvent::Click {
+                id: _,
+                position: _,
+                rect: _,
+                button: _,
+                button_state: _,
+            } = event
+            {
+                let app_handle = tray_icon.app_handle().clone();
+                let agent_state = {
+                    let agent_state = app_handle.state::<Mutex<AgentState>>();
+                    let agent_state = agent_state.lock().unwrap();
+                    agent_state.get()
+                };
+
+                if !agent_state {
+                    toggle_model(
+                        &auto_model_clone,
+                        &proxy_model_clone,
+                        &direct_model_clone,
+                        "direct_model",
+                    );
+                } else {
+                    let access_mode = command::get_access_mode(app_handle.clone());
+                    match access_mode {
+                        AccessMode::Auto => {
+                            toggle_model(
+                                &auto_model_clone,
+                                &proxy_model_clone,
+                                &direct_model_clone,
+                                "auto_model",
+                            );
+                        }
+                        AccessMode::Proxy => {
+                            toggle_model(
+                                &auto_model_clone,
+                                &proxy_model_clone,
+                                &direct_model_clone,
+                                "proxy_model",
+                            );
+                        }
+                    }
+                }
+
+                let bind_mode = command::get_bind_mode(app_handle);
+                match bind_mode {
+                    BindMode::Socks => {
+                        toggle_protocol(&socks_model_clone, &http_model_clone, "socks_model");
+                    }
+                    BindMode::Http => {
+                        toggle_protocol(&socks_model_clone, &http_model_clone, "http_model");
+                    }
+                }
+            }
+        })
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "auto_model" => {
                 println!("auto model menu item was clicked");
@@ -115,6 +181,7 @@ fn open_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
         tauri::AppHandle::show(app).unwrap();
+        app.emit("refresh", ()).unwrap();
     }
 }
 

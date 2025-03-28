@@ -1,5 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useRef } from 'react';
+import { Loader } from 'lucide-react';
+import { useRef } from 'react';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 
 function CombinedProxyRule() {
@@ -13,14 +23,31 @@ function CombinedProxyRule() {
     }
   };
 
-  useEffect(() => {
-    loadProxyRules();
-  }, []);
+  const handleOpenChange = async (open: boolean) => {
+    if (open) {
+      await loadProxyRules();
+    }
+  };
 
   return (
-    <ScrollArea className="h-72 w-full rounded-md border">
-      <div className="p-2 text-sm" ref={ruleRef}></div>
-    </ScrollArea>
+    <Dialog onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Combined Rules</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[680px]">
+        <DialogHeader>
+          <DialogTitle>Combined Proxy Rules</DialogTitle>
+          <DialogDescription>
+            Combine custom proxy rules and community proxy rules
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="h-70 w-full rounded-md border">
+          <div className="p-2 text-sm" ref={ruleRef}>
+            <Loader className="animate-spin" />
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }
 

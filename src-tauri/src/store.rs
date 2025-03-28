@@ -12,7 +12,7 @@ use tauri_plugin_http::reqwest;
 use tauri_plugin_store::{StoreExt, resolve_store_path};
 
 use crate::{
-    server::AddrInfo,
+    server::{AddrInfo, ServerInfo},
     state::{AccessMode, BindMode, ProtocolMode},
 };
 
@@ -23,7 +23,8 @@ pub struct Domain {
 }
 
 pub const CONFIG_PATH: &str = "config.json";
-pub const SERVER_ADDR: &str = "server";
+pub const ACTIVE_SERVER: &str = "active_server";
+pub const SERVERS: &str = "servers";
 pub const SOCKS_ADDR: &str = "socks";
 pub const HTTP_ADDR: &str = "http";
 pub const ACCESS_MODE: &str = "access_mode";
@@ -160,6 +161,73 @@ pub fn get_address(app: &AppHandle, config_key: &str) -> Result<Option<AddrInfo>
     if let Some(data) = data {
         let config = AddrInfo::from_json(&data);
         return Ok(Some(config));
+    }
+    Ok(None)
+}
+
+pub fn get_servers(app: &AppHandle) -> Result<Option<Vec<ServerInfo>>, Error> {
+    let store = app.store(CONFIG_PATH)?;
+    let data = store.get(SERVERS);
+    if let Some(data) = data {
+        let config = ServerInfo::from_json_array(&data);
+        return Ok(Some(config));
+    }
+    Ok(None)
+}
+
+pub fn get_server(app: &AppHandle, host: &str) -> Result<Option<ServerInfo>, Error> {
+    let store = app.store(CONFIG_PATH)?;
+    let data = store.get(SERVERS);
+    if let Some(data) = data {
+        let config = ServerInfo::from_json_array(&data);
+        let server = config.iter().find(|x| x.host == host);
+        if let Some(server) = server {
+            return Ok(Some(server.clone()));
+        }
+    }
+    Ok(None)
+}
+
+pub fn add_server(app: &AppHandle, server: ServerInfo) -> Result<Option<()>, Error> {
+    let store = app.store(CONFIG_PATH)?;
+    let data = store.get(SERVERS);
+    if let Some(data) = data {
+        let mut config = ServerInfo::from_json_array(&data);
+        config.push(server);
+        store.set(SERVERS, json!(config));
+        return Ok(Some(()));
+    }
+    let servers = vec![server];
+    store.set(SERVERS, json!(servers));
+    Ok(None)
+}
+
+pub fn update_server(app: &AppHandle, server: ServerInfo) -> Result<Option<()>, Error> {
+    let store = app.store(CONFIG_PATH)?;
+    let data = store.get(SERVERS);
+    if let Some(data) = data {
+        let mut config = ServerInfo::from_json_array(&data);
+        let index = config.iter().position(|x| x.host == server.host);
+        if let Some(index) = index {
+            config[index] = server;
+            store.set(SERVERS, json!(config));
+            return Ok(Some(()));
+        }
+    }
+    Ok(None)
+}
+
+pub fn delete_server(app: &AppHandle, host: &str) -> Result<Option<()>, Error> {
+    let store = app.store(CONFIG_PATH)?;
+    let data = store.get(SERVERS);
+    if let Some(data) = data {
+        let mut config = ServerInfo::from_json_array(&data);
+        let index = config.iter().position(|x| x.host == host);
+        if let Some(index) = index {
+            config.remove(index);
+            store.set(SERVERS, json!(config));
+            return Ok(Some(()));
+        }
     }
     Ok(None)
 }

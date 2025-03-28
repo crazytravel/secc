@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -61,13 +60,12 @@ function CertKey() {
                     placeholder="Input your tls cert key"
                     className="resize-none w-full"
                     {...field}
-                    rows={10}
+                    rows={5}
                   />
                 </FormControl>
               </FormItem>
             )}
           />
-          <Button type="submit">Submit</Button>
         </form>
       </Form>
     </div>

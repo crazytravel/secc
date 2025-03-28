@@ -11,7 +11,19 @@ impl SidecarState {
     pub fn set(&mut self, pid: u32) {
         self.0 = pid;
     }
-    pub fn get(&mut self) -> u32 {
+    pub fn get(&self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Default)]
+pub struct AgentState(bool);
+
+impl AgentState {
+    pub fn set(&mut self, state: bool) {
+        self.0 = state;
+    }
+    pub fn get(&self) -> bool {
         self.0
     }
 }
