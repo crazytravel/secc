@@ -21,13 +21,28 @@ export default function TrafficLogs() {
 
   useEffect(() => {
     if (logRef.current) {
-      logRef.current.innerText = logsCache.current;
+      logRef.current.innerHTML = logsCache.current;
     }
     const unLogListen = listen('secc-agent-log', (event) => {
-      const newLog = event.payload as string;
-
+      let newLog = event.payload as string;
+      newLog = newLog.replace(
+        'ERROR',
+        '<span class="text-red-500">ERROR</span>',
+      );
+      newLog = newLog.replace(
+        'INFO',
+        '<span class="text-green-500">INFO</span>',
+      );
+      newLog = newLog.replace(
+        'PROXY',
+        '<span class="text-orange-500">PROXY</span>',
+      );
+      newLog = newLog.replace(
+        'DIRECT',
+        '<span class="text-blue-500">DIRECT</span>',
+      );
       // Update cache ref
-      logsCache.current += newLog;
+      logsCache.current += `<div>${newLog}</div>`;
 
       // Optional: Trim logs if they exceed max size
       if (logsCache.current.length > 50000) {
@@ -39,7 +54,7 @@ export default function TrafficLogs() {
       // Update local storage without triggering renders
       localStorage.setItem(LOG_STORAGE_KEY, logsCache.current);
       if (logRef.current) {
-        logRef.current.innerText = logsCache.current;
+        logRef.current.innerHTML = logsCache.current;
       }
     });
     return () => {

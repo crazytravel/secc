@@ -40,7 +40,7 @@ const ServerTable = forwardRef((_props, ref) => {
             <TableHead className="w-[15px]">Alias</TableHead>
             <TableHead>IP Address</TableHead>
             <TableHead className="w-[15px]">Quic Port</TableHead>
-            <TableHead className="w-[15px]">Tcp/Udp Port</TableHead>
+            <TableHead className="w-[15px]">Tcp Port</TableHead>
             <TableHead className="w-[20px]">Operation</TableHead>
           </TableRow>
         </TableHeader>

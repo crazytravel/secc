@@ -223,7 +223,7 @@ export function AppSidebar() {
             <Tabs value={protocolMode} onValueChange={handleProtocolModeSwitch}>
               <TabsList>
                 <TabsTrigger value="quic">Quic Mode</TabsTrigger>
-                <TabsTrigger value="tcp-udp">TcpUdp Mode</TabsTrigger>
+                <TabsTrigger value="tcp">Tcp Mode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

@@ -237,7 +237,7 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: Pro
                 ProtocolMode::Quic => {
                     server_addr = format!("{}:{}", server.host, server.quic_port);
                 }
-                ProtocolMode::TcpUdp => {
+                ProtocolMode::Tcp => {
                     if let Some(tcp_port) = server.tcp_port {
                         server_addr = format!("{}:{}", server.host, tcp_port);
                     }

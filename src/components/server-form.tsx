@@ -150,7 +150,9 @@ export default function ServerForm({
                     name="host"
                     render={({ field }) => (
                       <FormItem className="flex-2">
-                        <FormLabel><span className='text-red-500'>*</span>IP Address</FormLabel>
+                        <FormLabel>
+                          <span className="text-red-500">*</span>IP Address
+                        </FormLabel>
                         <FormControl>
                           <Input
                             disabled={!!host}
@@ -167,7 +169,9 @@ export default function ServerForm({
                     name="quicPort"
                     render={({ field }) => (
                       <FormItem className="w-28">
-                        <FormLabel><span className='text-red-500'>*</span>Quic Port</FormLabel>
+                        <FormLabel>
+                          <span className="text-red-500">*</span>Quic Port
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Quic Port" {...field} />
                         </FormControl>
@@ -180,9 +184,9 @@ export default function ServerForm({
                     name="tcpPort"
                     render={({ field }) => (
                       <FormItem className="w-28">
-                        <FormLabel>Tcp/Udp Port</FormLabel>
+                        <FormLabel>Tcp Port</FormLabel>
                         <FormControl>
-                          <Input placeholder="Tcp/Udp Port" {...field} />
+                          <Input placeholder="Tcp Port" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -194,7 +198,9 @@ export default function ServerForm({
                   name="cert"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel><span className='text-red-500'>*</span>Cert</FormLabel>
+                      <FormLabel>
+                        <span className="text-red-500">*</span>Cert
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Input your tls cert"
@@ -212,7 +218,9 @@ export default function ServerForm({
                   name="certKey"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel><span className='text-red-500'>*</span>Cert Key</FormLabel>
+                      <FormLabel>
+                        <span className="text-red-500">*</span>Cert Key
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Input your tls cert key"

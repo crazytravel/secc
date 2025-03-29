@@ -25,7 +25,7 @@ export default function TrafficLog() {
                 <TableHead className="w-[150px]">Time</TableHead>
                 <TableHead className="w-[8px]">Log Type</TableHead>
                 <TableHead className="w-[8px]">Nature</TableHead>
-                <TableHead className="w-[80px]">TCP/UDP</TableHead>
+                <TableHead className="w-[80px]">TCP</TableHead>
                 <TableHead>Message</TableHead>
               </TableRow>
             </TableHeader>

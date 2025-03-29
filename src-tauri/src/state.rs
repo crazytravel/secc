@@ -53,7 +53,7 @@ pub enum ProtocolMode {
     #[serde(rename = "quic")]
     #[strum(serialize = "quic")]
     Quic,
-    #[serde(rename = "tcp-udp")]
-    #[strum(serialize = "tcp-udp")]
-    TcpUdp,
+    #[serde(rename = "tcp")]
+    #[strum(serialize = "tcp")]
+    Tcp,
 }
