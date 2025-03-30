@@ -42,7 +42,7 @@ export default function TrafficLogs() {
         '<span class="text-blue-500">DIRECT</span>',
       );
       // Update cache ref
-      logsCache.current += `<div>${newLog}</div>`;
+      logsCache.current += `<div class="text-sm">${newLog}</div>`;
 
       // Optional: Trim logs if they exceed max size
       if (logsCache.current.length > 50000) {
