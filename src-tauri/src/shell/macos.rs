@@ -6,11 +6,10 @@ use tauri_plugin_shell::process::CommandEvent;
 
 use crate::{
     state::{AccessMode, ProtocolMode, SidecarState},
-    store::{self, CERT_PATH, DIRECT_RULES_PATH, PROXY_RULES_PATH},
-    tray,
+    store::{self, CERT_PATH, DIRECT_RULES_PATH, PROTOCOL_MODE, PROXY_RULES_PATH},
 };
 
-pub fn switch_to_socks(app: AppHandle) {
+pub fn switch_to_socks(app: &AppHandle) {
     let (_rx, _child) = app
         .shell()
         .command("networksetup")
@@ -74,7 +73,7 @@ pub fn switch_to_socks(app: AppHandle) {
         .unwrap();
 }
 
-pub fn switch_to_http(app: AppHandle) {
+pub fn switch_to_http(app: &AppHandle) {
     let (_rx, _child) = app
         .shell()
         .command("networksetup")
@@ -152,7 +151,7 @@ pub fn switch_to_http(app: AppHandle) {
         .unwrap();
 }
 
-pub fn switch_to_direct(app: AppHandle) {
+pub fn switch_to_direct(app: &AppHandle) {
     let (_rx, _child) = app
         .shell()
         .command("networksetup")
@@ -204,34 +203,40 @@ pub fn switch_to_direct(app: AppHandle) {
         .unwrap();
 }
 
-pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: ProtocolMode) {
-    println!(
-        "call sidecar function was called: {}, {}",
-        access_mode, protocol_mode
-    );
+pub fn call_sidecar(app: &AppHandle) {
+    let protocol_mode = store::get_value_by_key(app, PROTOCOL_MODE)
+        .ok()
+        .flatten()
+        .and_then(|protocol_mode| protocol_mode.parse().ok())
+        .unwrap_or(ProtocolMode::Tcp);
+    let access_mode = store::get_value_by_key(app, store::ACCESS_MODE)
+        .ok()
+        .flatten()
+        .and_then(|access_mode| access_mode.parse().ok())
+        .unwrap_or(AccessMode::Auto);
     let mut proxy_path = String::new();
     let mut direct_path = String::new();
     let mut cert_path = String::new();
     let mut server_addr = String::new();
-    let proxy_list_res = store::get_path(app, PROXY_RULES_PATH);
+    let proxy_list_res = store::get_config_path(app, PROXY_RULES_PATH);
     if let Ok(proxy_list) = proxy_list_res {
         if let Some(proxy_list_path) = proxy_list.to_str() {
             proxy_path = proxy_list_path.to_string();
         }
     }
-    let direct_list_res = store::get_path(app, DIRECT_RULES_PATH);
+    let direct_list_res = store::get_config_path(app, DIRECT_RULES_PATH);
     if let Ok(direct_list) = direct_list_res {
         if let Some(direct_list_path) = direct_list.to_str() {
             direct_path = direct_list_path.to_string();
         }
     }
-    let cert_res = store::get_path(app, CERT_PATH);
+    let cert_res = store::get_config_path(app, CERT_PATH);
     if let Ok(cert) = cert_res {
         if let Some(the_cert_path) = cert.to_str() {
             cert_path = the_cert_path.to_string();
         }
     }
-    if let Ok(Some(host)) = store::get_str_config(app, store::ACTIVE_SERVER) {
+    if let Ok(Some(host)) = store::get_value_by_key(app, store::ACTIVE_SERVER) {
         if let Ok(Some(server)) = store::get_server(app, host.as_str()) {
             match protocol_mode {
                 ProtocolMode::Quic => {
@@ -297,8 +302,5 @@ pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: Pro
         let sidecar_state = app.state::<Mutex<SidecarState>>();
         let mut sidecar_state = sidecar_state.lock().unwrap();
         sidecar_state.set(pid);
-    }
-    if pid != 0 {
-        tray::change_tray_icon(app, true).unwrap();
     }
 }

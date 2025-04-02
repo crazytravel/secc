@@ -68,7 +68,7 @@ export function AppSidebar() {
   const [activeServer, setActiveServer] = useState('');
   const [accessMode, setAccessMode] = useState('auto');
   const [bindMode, setBindMode] = useState('socks');
-  const [protocolMode, setProtocolMode] = useState('quic');
+  const [protocolMode, setProtocolMode] = useState('tcp');
 
   const handleSeccSwitch = async (checked: boolean) => {
     console.log('checked', checked);
@@ -222,8 +222,8 @@ export function AppSidebar() {
           <div className="flex items-center space-x-4 rounded-md border p-4">
             <Tabs value={protocolMode} onValueChange={handleProtocolModeSwitch}>
               <TabsList>
-                <TabsTrigger value="quic">Quic Mode</TabsTrigger>
                 <TabsTrigger value="tcp">Tcp Mode</TabsTrigger>
+                <TabsTrigger value="quic">Quic Mode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

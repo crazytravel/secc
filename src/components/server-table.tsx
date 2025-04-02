@@ -39,8 +39,8 @@ const ServerTable = forwardRef((_props, ref) => {
             <TableHead className="w-[10px]">No.</TableHead>
             <TableHead className="w-[15px]">Alias</TableHead>
             <TableHead>IP Address</TableHead>
-            <TableHead className="w-[15px]">Quic Port</TableHead>
             <TableHead className="w-[15px]">Tcp Port</TableHead>
+            <TableHead className="w-[15px]">Quic Port</TableHead>
             <TableHead className="w-[20px]">Operation</TableHead>
           </TableRow>
         </TableHeader>
@@ -50,8 +50,8 @@ const ServerTable = forwardRef((_props, ref) => {
               <TableCell className="font-medium">{index + 1}</TableCell>
               <TableCell>{server.alias ? server.alias : '-'}</TableCell>
               <TableCell>{server.host}</TableCell>
-              <TableCell>{server.quic_port}</TableCell>
               <TableCell>{server.tcp_port}</TableCell>
+              <TableCell>{server.quic_port}</TableCell>
               <TableCell className="flex items-center space-x-2">
                 <ServerForm host={server.host} callback={loadData} />
                 <Confirm callback={() => handleDelete(server.host)}>

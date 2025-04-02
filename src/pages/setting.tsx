@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { Settings } from 'lucide-react';
 
 const FormSchema = z.object({
   socksIp: z.string().min(2, {
@@ -91,7 +92,9 @@ function Setting() {
     <div>
       <Card>
         <CardHeader>
-          <CardTitle>Settings</CardTitle>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings /> <div>Settings</div>
+          </CardTitle>
           <CardDescription>Set listening address information</CardDescription>
         </CardHeader>
         <CardContent>

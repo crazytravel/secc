@@ -68,19 +68,19 @@ pub fn init_all(app: &AppHandle) -> Result<(), Error> {
             },
         )?;
     }
-    let access_mode = get_str_config(app, ACCESS_MODE)?;
+    let access_mode = get_value_by_key(app, ACCESS_MODE)?;
     if access_mode.is_none() {
         set_str_config(app, ACCESS_MODE, AccessMode::Auto.to_string().as_str())?;
     }
-    let bind_mode = get_str_config(app, BIND_MODE)?;
+    let bind_mode = get_value_by_key(app, BIND_MODE)?;
     if bind_mode.is_none() {
         set_str_config(app, BIND_MODE, BindMode::Socks.to_string().as_str())?;
     }
-    let protocol_mode = get_str_config(app, PROTOCOL_MODE)?;
+    let protocol_mode = get_value_by_key(app, PROTOCOL_MODE)?;
     if protocol_mode.is_none() {
-        set_str_config(app, PROTOCOL_MODE, ProtocolMode::Quic.to_string().as_str())?;
+        set_str_config(app, PROTOCOL_MODE, ProtocolMode::Tcp.to_string().as_str())?;
     }
-    let rules_url = get_str_config(app, COMMUNITY_RULES)?;
+    let rules_url = get_value_by_key(app, COMMUNITY_RULES)?;
     if rules_url.is_none() {
         set_str_config(app, COMMUNITY_RULES, COMMUNITY_RULES_URL)?;
     }
@@ -92,7 +92,7 @@ pub fn init_all(app: &AppHandle) -> Result<(), Error> {
 }
 
 pub async fn load_community_proxy_list(app: &AppHandle) -> Result<(), Error> {
-    let url = get_str_config(app, COMMUNITY_RULES)?;
+    let url = get_value_by_key(app, COMMUNITY_RULES)?;
     let req_url = match url {
         Some(url) => url,
         None => COMMUNITY_RULES_URL.to_string(),
@@ -144,7 +144,7 @@ pub fn init_cert_files(app: &AppHandle) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn get_path(app: &AppHandle, sub_path: &str) -> Result<PathBuf, Error> {
+pub fn get_config_path(app: &AppHandle, sub_path: &str) -> Result<PathBuf, Error> {
     let path = resolve_store_path(app, sub_path)?;
     Ok(path)
 }
@@ -238,9 +238,9 @@ pub fn set_str_config(app: &AppHandle, mode: &str, mode_value: &str) -> Result<(
     Ok(())
 }
 
-pub fn get_str_config(app: &AppHandle, mode: &str) -> Result<Option<String>, Error> {
+pub fn get_value_by_key(app: &AppHandle, key: &str) -> Result<Option<String>, Error> {
     let store = app.store(CONFIG_PATH)?;
-    let data = store.get(mode);
+    let data = store.get(key);
     if let Some(data) = data {
         let mode_value = data.as_str().unwrap().to_string();
         return Ok(Some(mode_value));

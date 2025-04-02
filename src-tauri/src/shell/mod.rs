@@ -7,12 +7,11 @@ mod windows;
 
 use std::sync::Mutex;
 
-use crate::state::{AccessMode, ProtocolMode, SidecarState};
-use anyhow::{Error, anyhow};
+use crate::state::SidecarState;
 use sysinfo::{Pid, System};
 use tauri::{AppHandle, Manager};
 
-pub fn switch_to_socks(app: AppHandle) {
+pub fn switch_to_socks(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     macos::switch_to_socks(app);
     #[cfg(target_os = "linux")]
@@ -20,7 +19,7 @@ pub fn switch_to_socks(app: AppHandle) {
     #[cfg(target_os = "windows")]
     windows::switch_to_socks(app);
 }
-pub fn switch_to_http(app: AppHandle) {
+pub fn switch_to_http(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     macos::switch_to_http(app);
     #[cfg(target_os = "linux")]
@@ -28,7 +27,7 @@ pub fn switch_to_http(app: AppHandle) {
     #[cfg(target_os = "windows")]
     windows::switch_to_http(app);
 }
-pub fn switch_to_direct(app: AppHandle) {
+pub fn switch_to_direct(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     macos::switch_to_direct(app);
     #[cfg(target_os = "linux")]
@@ -36,26 +35,22 @@ pub fn switch_to_direct(app: AppHandle) {
     #[cfg(target_os = "windows")]
     windows::switch_to_direct(app);
 }
-pub fn call_sidecar(app: &AppHandle, access_mode: AccessMode, protocol_mode: ProtocolMode) {
+pub fn call_sidecar(app: &AppHandle) {
     #[cfg(target_os = "macos")]
-    macos::call_sidecar(app, access_mode, protocol_mode);
+    macos::call_sidecar(app);
     #[cfg(target_os = "linux")]
-    linux::call_sidecar(app, access_mode, protocol_mode);
+    linux::call_sidecar(app);
     #[cfg(target_os = "windows")]
-    windows::call_sidecar(app, access_mode, protocol_mode);
+    windows::call_sidecar(app);
 }
 
-pub fn kill_sidecar(app: &AppHandle) -> Result<(), Error> {
+pub fn kill_sidecar(app: &AppHandle) {
     let sidecar_state = app.state::<Mutex<SidecarState>>();
     let sidecar_state = sidecar_state.lock().unwrap();
     let pid = sidecar_state.get();
     let sys = System::new_all();
     let pid = Pid::from_u32(pid);
     if let Some(process) = sys.process(pid) {
-        let status = process.kill();
-        if !status {
-            return Err(anyhow!("Kill sidecar process failed"));
-        }
+        process.kill();
     }
-    Ok(())
 }

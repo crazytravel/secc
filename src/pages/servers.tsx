@@ -9,6 +9,7 @@ import {
 import ServerForm from '@/components/server-form';
 import ServerTable from '@/components/server-table';
 import { useRef } from 'react';
+import { Server } from 'lucide-react';
 
 export default function Servers() {
   const serverTableRef = useRef<{ loadData: () => void } | null>(null);
@@ -21,7 +22,9 @@ export default function Servers() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Server Configuration</CardTitle>
+          <CardTitle className="flex items-center space-x-2">
+            <Server /> <div>Server Configuration</div>
+          </CardTitle>
           <CardDescription>
             Set proxy server address information
           </CardDescription>

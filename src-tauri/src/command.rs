@@ -10,91 +10,75 @@ use crate::{
     tray::{self},
 };
 
+pub fn restart_agent(app: &AppHandle) {
+    shell::kill_sidecar(app);
+    shell::call_sidecar(app);
+}
+
 #[tauri::command]
 pub fn open_secc(app: AppHandle) {
-    if let Err(err) = shell::kill_sidecar(&app) {
-        eprintln!("close secc error: {:?}", err);
-    }
-    let app_handle = app.clone();
-    let access_mode = get_access_mode(app_handle.clone());
-    let bind_mode = get_bind_mode(app_handle.clone());
+    let bind_mode = get_bind_mode(app.clone());
     match bind_mode {
         BindMode::Socks => {
-            shell::switch_to_socks(app_handle.clone());
+            shell::switch_to_socks(&app);
         }
         BindMode::Http => {
-            shell::switch_to_http(app_handle.clone());
+            shell::switch_to_http(&app);
         }
     }
-    let protocol_mode = get_protocol_mode(app_handle.clone());
-
-    tauri::async_runtime::spawn(async move {
-        shell::call_sidecar(&app_handle, access_mode, protocol_mode);
-    });
-    {
-        let agent_state = app.state::<Mutex<AgentState>>();
-        let mut agent_state = agent_state.lock().unwrap();
-        agent_state.set(true);
-    }
+    restart_agent(&app);
+    let agent_state = app.state::<Mutex<AgentState>>();
+    let mut agent_state = agent_state.lock().unwrap();
+    agent_state.set(true);
+    tray::change_tray_icon(&app, true).unwrap();
 }
 
 #[tauri::command]
 pub fn close_secc(app: AppHandle) {
-    if let Err(err) = shell::kill_sidecar(&app) {
-        eprintln!("close secc error: {:?}", err);
-    }
-    shell::switch_to_direct(app.clone());
+    shell::kill_sidecar(&app);
+    shell::switch_to_direct(&app);
+    let agent_state = app.state::<Mutex<AgentState>>();
+    let mut agent_state = agent_state.lock().unwrap();
+    agent_state.set(false);
     tray::change_tray_icon(&app, false).unwrap();
-    {
-        let agent_state = app.state::<Mutex<AgentState>>();
-        let mut agent_state = agent_state.lock().unwrap();
-        agent_state.set(false);
-    }
 }
 
 #[tauri::command]
 pub fn switch_access_mode(app: AppHandle, access_mode: AccessMode) {
     println!("access_mode: {:?}", access_mode);
     store::set_str_config(&app, store::ACCESS_MODE, access_mode.to_string().as_str()).unwrap();
-    open_secc(app);
+    restart_agent(&app);
 }
 
 #[tauri::command]
 pub fn switch_bind_mode(app: AppHandle, bind_mode: BindMode) {
-    let app_handle = app.clone();
     println!("bind_mode: {:?}", bind_mode);
     match bind_mode {
         BindMode::Socks => {
-            shell::switch_to_socks(app);
+            shell::switch_to_socks(&app);
         }
         BindMode::Http => {
-            shell::switch_to_http(app);
+            shell::switch_to_http(&app);
         }
     }
-    store::set_str_config(
-        &app_handle,
-        store::BIND_MODE,
-        bind_mode.to_string().as_str(),
-    )
-    .unwrap();
+    store::set_str_config(&app, store::BIND_MODE, bind_mode.to_string().as_str()).unwrap();
 }
 
 #[tauri::command]
 pub fn switch_protocol_mode(app: AppHandle, protocol_mode: ProtocolMode) {
-    let app_handle = app.clone();
     println!("protocol_mode: {:?}", protocol_mode);
     store::set_str_config(
-        &app_handle,
+        &app,
         store::PROTOCOL_MODE,
         protocol_mode.to_string().as_str(),
     )
     .unwrap();
-    open_secc(app_handle);
+    restart_agent(&app);
 }
 
 #[tauri::command]
 pub fn get_access_mode(app: AppHandle) -> AccessMode {
-    store::get_str_config(&app, store::ACCESS_MODE)
+    store::get_value_by_key(&app, store::ACCESS_MODE)
         .ok()
         .flatten()
         .and_then(|access_mode| access_mode.parse().ok())
@@ -103,7 +87,7 @@ pub fn get_access_mode(app: AppHandle) -> AccessMode {
 
 #[tauri::command]
 pub fn get_bind_mode(app: AppHandle) -> BindMode {
-    store::get_str_config(&app, store::BIND_MODE)
+    store::get_value_by_key(&app, store::BIND_MODE)
         .ok()
         .flatten()
         .and_then(|bind_mode| bind_mode.parse().ok())
@@ -112,11 +96,11 @@ pub fn get_bind_mode(app: AppHandle) -> BindMode {
 
 #[tauri::command]
 pub fn get_protocol_mode(app: AppHandle) -> ProtocolMode {
-    store::get_str_config(&app, store::PROTOCOL_MODE)
+    store::get_value_by_key(&app, store::PROTOCOL_MODE)
         .ok()
         .flatten()
         .and_then(|protocol_mode| protocol_mode.parse().ok())
-        .unwrap_or(ProtocolMode::Quic)
+        .unwrap_or(ProtocolMode::Tcp)
 }
 
 #[tauri::command]
@@ -140,7 +124,7 @@ pub fn add_server(app: AppHandle, server: ServerInfo) {
 #[tauri::command]
 pub fn delete_server(app: AppHandle, host: &str) {
     let cloned_app = app.clone();
-    let res = store::get_str_config(&app, store::ACTIVE_SERVER);
+    let res = store::get_value_by_key(&app, store::ACTIVE_SERVER);
     if let Ok(Some(server)) = res {
         if server == host {
             store::set_str_config(&cloned_app, store::ACTIVE_SERVER, "").unwrap();
@@ -165,7 +149,7 @@ pub fn active_server(app: AppHandle, host: &str) {
 
 #[tauri::command]
 pub fn get_active_server(app: AppHandle) -> Option<String> {
-    let res = store::get_str_config(&app, store::ACTIVE_SERVER);
+    let res = store::get_value_by_key(&app, store::ACTIVE_SERVER);
     res.ok().flatten()
 }
 

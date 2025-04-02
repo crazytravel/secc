@@ -29,8 +29,8 @@ import { useState } from 'react';
 const FormSchema = z.object({
   alias: z.string().optional(),
   host: z.string().nonempty(),
-  quicPort: z.string().nonempty(),
-  tcpPort: z.string().optional(),
+  tcpPort: z.string().nonempty(),
+  quicPort: z.string().optional(),
   cert: z.string().nonempty(),
   certKey: z.string().nonempty(),
 });
@@ -75,8 +75,8 @@ export default function ServerForm({
         server: {
           alias: data.alias,
           host: data.host,
-          quic_port: parseInt(data.quicPort),
-          tcp_port: data.tcpPort ? parseInt(data.tcpPort) : null,
+          quic_port: data.quicPort ? parseInt(data.quicPort) : null,
+          tcp_port: parseInt(data.tcpPort),
           cert: data.cert,
           cert_key: data.certKey,
         },
@@ -88,8 +88,8 @@ export default function ServerForm({
       server: {
         alias: data.alias,
         host: data.host,
-        quic_port: parseInt(data.quicPort),
-        tcp_port: data.tcpPort ? parseInt(data.tcpPort) : null,
+        quic_port: data.quicPort ? parseInt(data.quicPort) : null,
+        tcp_port: parseInt(data.tcpPort),
         cert: data.cert,
         cert_key: data.certKey,
       },
@@ -166,14 +166,14 @@ export default function ServerForm({
                   />
                   <FormField
                     control={form.control}
-                    name="quicPort"
+                    name="tcpPort"
                     render={({ field }) => (
                       <FormItem className="w-28">
                         <FormLabel>
-                          <span className="text-red-500">*</span>Quic Port
+                          <span className="text-red-500">*</span>Tcp Port
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="Quic Port" {...field} />
+                          <Input placeholder="Tcp Port" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -181,12 +181,12 @@ export default function ServerForm({
                   />
                   <FormField
                     control={form.control}
-                    name="tcpPort"
+                    name="quicPort"
                     render={({ field }) => (
                       <FormItem className="w-28">
-                        <FormLabel>Tcp Port</FormLabel>
+                        <FormLabel>Quic Port</FormLabel>
                         <FormControl>
-                          <Input placeholder="Tcp Port" {...field} />
+                          <Input placeholder="Quic Port" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
